@@ -36,9 +36,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Column(
               children: [
                 Image.asset(
-                  darkTheme ? 'assets/images/img_1.png' : 'assets/images/img_2.png',
+                  darkTheme
+                      ? 'assets/images/img_1.png'
+                      : 'assets/images/img_2.png',
                 ),
                 const SizedBox(height: 20),
+
                 Text(
                   'Register',
                   style: TextStyle(
@@ -55,8 +58,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-
-                        // NAME FIELD
                         _inputField(
                           darkTheme: darkTheme,
                           controller: nameTextEditingController,
@@ -74,7 +75,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         const SizedBox(height: 10),
 
-                        // EMAIL FIELD
                         _inputField(
                           darkTheme: darkTheme,
                           controller: emailTextEditingController,
@@ -93,14 +93,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         const SizedBox(height: 10),
 
-                        // PHONE FIELD
                         IntlPhoneField(
                           controller: phoneTextEditingController,
                           showCountryFlag: false,
                           dropdownIcon: Icon(
                             Icons.arrow_drop_down,
-                            color:
-                            darkTheme ? Colors.amber.shade400 : Colors.grey,
+                            color: darkTheme
+                                ? Colors.amber.shade400
+                                : Colors.grey,
                           ),
                           decoration: InputDecoration(
                             hintText: "Phone Number",
@@ -118,7 +118,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         const SizedBox(height: 10),
 
-                        // ADDRESS FIELD
                         _inputField(
                           darkTheme: darkTheme,
                           controller: addressTextEditingController,
@@ -128,9 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             if (text == null || text.isEmpty) {
                               return 'Address cannot be empty';
                             }
-                            if (text.length < 3) {
-                              return "Enter a valid address";
-                            }
+                            if (text.length < 3) return "Enter a valid address";
                             if (text.length > 100) {
                               return "Max 100 characters";
                             }
@@ -140,7 +137,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         const SizedBox(height: 10),
 
-                        // PASSWORD FIELD
                         _passwordField(
                           darkTheme: darkTheme,
                           controller: passwordTextEditingController,
@@ -153,7 +149,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         const SizedBox(height: 10),
 
-                        // CONFIRM PASSWORD FIELD
                         _passwordField(
                           darkTheme: darkTheme,
                           controller: confirmTextEditingController,
@@ -177,8 +172,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                            darkTheme ? Colors.amber.shade400 : Colors.blue,
+                            backgroundColor: darkTheme
+                                ? Colors.amber.shade400
+                                : Colors.blue,
                             foregroundColor:
                             darkTheme ? Colors.black : Colors.white,
                             shape: RoundedRectangleBorder(
@@ -187,9 +183,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             minimumSize: const Size(double.infinity, 50),
                           ),
                           onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              // Register logic
-                            }
+                            if (_formKey.currentState!.validate()) {}
                           },
                           child: const Text(
                             "Register",
@@ -211,6 +205,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
 
+                        const SizedBox(height: 20),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Have an account?",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            GestureDetector(
+                              onTap: () {},
+                              child: Text(
+                                "Sign In",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: darkTheme
+                                      ? Colors.amber.shade400
+                                      : Colors.blue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -222,10 +243,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
+}
 
-  // ----------- COMPONENTS -----------
-
-  Widget _inputField({
+Widget _inputField({
     required bool darkTheme,
     required TextEditingController controller,
     required IconData icon,
@@ -295,4 +315,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
       autovalidateMode: AutovalidateMode.onUserInteraction,
     );
   }
-}
+
