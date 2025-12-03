@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'main_screen.dart';
+import 'global.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,9 +23,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordTextEditingController = TextEditingController();
   final confirmTextEditingController = TextEditingController();
 
-  final _formKey = GlobalKey<FormState>();
   bool _passwordVisible = false;
   bool _confirmVisible = false;
+
+  final _formKey = GlobalKey<FormState>();
+  void _submit() async {
+    if (!_formKey.currentState!.validate()) {
+      Fluttertoast.showToast(msg: "Not all fields are valid");
+      return;
+    }
+
+    try {
+      UserCredential auth = await firebaseAuth.createUserWithEmailAndPassword(
+        email: emailTextEditingController.text.trim(),
+        password: passwordTextEditingController.text.trim(),
+      );
+
+      currentUser = auth.user;
+
+      if (currentUser != null) {
+        Map<String, String> userMap = {
+          "id": currentUser!.uid,
+          "name": nameTextEditingController.text.trim(),
+          "email": emailTextEditingController.text.trim(),
+          "phone": phoneTextEditingController.text.trim(),
+          "address": addressTextEditingController.text.trim(),
+        };
+
+        DatabaseReference userRef = FirebaseDatabase.instance.ref().child("users");
+        await userRef.child(currentUser!.uid).set(userMap);
+
+        Fluttertoast.showToast(msg: "Successfully Registered");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (c) => const MainScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      Fluttertoast.showToast(msg: e.message ?? "Registration failed");
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Error: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +117,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           },
                         ),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 20),
 
                         _inputField(
                           darkTheme: darkTheme,
@@ -91,7 +135,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           },
                         ),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 20,),
 
                         IntlPhoneField(
                           controller: phoneTextEditingController,
