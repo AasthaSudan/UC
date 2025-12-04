@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -57,8 +58,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                 Text(
                   'Forgot Password',
                   style: TextStyle(
-                    color:
-                    darkTheme ? Colors.amber.shade400 : Colors.blue,
+                    color: darkTheme ? Colors.amber.shade400 : Colors.blue,
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                   ),
@@ -68,7 +68,9 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                 Text(
                   "Enter your email to receive reset link",
                   style: TextStyle(
-                      color: Colors.grey.shade600, fontSize: 14),
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
                 ),
 
                 const SizedBox(height: 25),
@@ -101,16 +103,14 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                         // SEND BUTTON
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: darkTheme
-                                ? Colors.amber.shade400
-                                : Colors.blue,
+                            backgroundColor:
+                            darkTheme ? Colors.amber.shade400 : Colors.blue,
                             foregroundColor:
                             darkTheme ? Colors.black : Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(32),
                             ),
-                            minimumSize:
-                            const Size(double.infinity, 50),
+                            minimumSize: const Size(double.infinity, 50),
                           ),
                           onPressed: _resetPassword,
                           child: const Text(
@@ -119,7 +119,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 15),
 
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
@@ -146,7 +146,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
   }
 }
 
-// Reuse INPUT FIELD widget from your UI
+// Input Field
 Widget _inputField({
   required bool darkTheme,
   required TextEditingController controller,
@@ -156,19 +156,18 @@ Widget _inputField({
 }) {
   return TextFormField(
     controller: controller,
+    inputFormatters: [LengthLimitingTextInputFormatter(100)],
     decoration: InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor:
-      darkTheme ? Colors.black45 : Colors.grey.shade200,
+      fillColor: darkTheme ? Colors.black45 : Colors.grey.shade200,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(40),
         borderSide: BorderSide.none,
       ),
       prefixIcon: Icon(
         icon,
-        color:
-        darkTheme ? Colors.amber.shade400 : Colors.grey,
+        color: darkTheme ? Colors.amber.shade400 : Colors.grey,
       ),
     ),
     validator: validator,

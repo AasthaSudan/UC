@@ -1,16 +1,23 @@
+import 'package:firebase_database/firebase_database.dart';
+import 'global.dart';
+import 'user_model.dart';
+
 class AssistantMethods {
 
-  static void readCurrentOnlineUserInfo() async {
-    currentUser=firebaseAuth.currentUser;
-    DatabaseReference userRef=FirebaseDatabase.instance
-    .ref()
-    .child("users")
-    .child(currentUser!.uid);
+  static Future<void> readCurrentOnlineUserInfo() async {
+    currentUser = firebaseAuth.currentUser;
 
-    userRed.once().then((snap) {
-      if(snap.snapshot.value!=null) {
-        userModelCurrentInfo=UserModel.fromSnapshot(snap.snapshot);
-      }
-    })
+    if (currentUser == null) return;
+
+    DatabaseReference userRef = FirebaseDatabase.instance
+        .ref()
+        .child("users")
+        .child(currentUser!.uid);
+
+    DatabaseEvent event = await userRef.once();
+
+    if (event.snapshot.value != null) {
+      userModelCurrentInfo = UserModel.fromSnapshot(event.snapshot);
+    }
   }
 }

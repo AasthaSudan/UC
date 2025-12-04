@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
+import 'forget_password_screen.dart';
 import 'main_screen.dart';
 import 'global.dart';
 
@@ -60,6 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 40),
 
+                // IMAGE ON TOP
                 Image.asset(
                   darkTheme
                       ? 'assets/images/img_1.png'
@@ -68,6 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
+                // TITLE
                 Text(
                   'Login',
                   style: TextStyle(
@@ -79,13 +83,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
+                // FIELDS
                 Padding(
                   padding: const EdgeInsets.fromLTRB(15, 10, 15, 40),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
-                        // EMAIL
+                        // EMAIL FIELD
                         _inputField(
                           darkTheme: darkTheme,
                           controller: emailController,
@@ -104,15 +109,52 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // PASSWORD
+                        // PASSWORD FIELD
                         _passwordField(
                           darkTheme: darkTheme,
                           controller: passwordController,
                           hint: "Password",
                           visible: _passwordVisible,
                           onToggleVisibility: () {
-                            setState(() => _passwordVisible = !_passwordVisible);
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
                           },
+                          validator: (text) {
+                            if (text == null || text.isEmpty) {
+                              return 'Password cannot be empty';
+                            }
+                            if (text.length < 6) {
+                              return "Minimum 6 characters";
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // FORGOT PASSWORD
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (c) => const ForgetPasswordScreen()),
+                            );
+                          },
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              "Forgot Password?",
+                              style: TextStyle(
+                                color: darkTheme
+                                    ? Colors.amber.shade400
+                                    : Colors.blue,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
                         ),
 
                         const SizedBox(height: 30),
@@ -150,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(width: 5),
                             GestureDetector(
                               onTap: () {
-                                // TODO: Navigate to Register Screen
+                                // TODO: Replace with RegisterScreen
                               },
                               child: Text(
                                 "Register",
@@ -162,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ],
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -176,7 +218,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// REUSE YOUR INPUT FIELD
+// =============================
+// REUSABLE INPUT FIELD
+// =============================
 Widget _inputField({
   required bool darkTheme,
   required TextEditingController controller,
@@ -205,7 +249,9 @@ Widget _inputField({
   );
 }
 
+// =============================
 // PASSWORD FIELD
+// =============================
 Widget _passwordField({
   required bool darkTheme,
   required TextEditingController controller,
@@ -217,6 +263,7 @@ Widget _passwordField({
   return TextFormField(
     controller: controller,
     obscureText: !visible,
+    inputFormatters: [LengthLimitingTextInputFormatter(100)],
     decoration: InputDecoration(
       hintText: hint,
       filled: true,
@@ -237,14 +284,7 @@ Widget _passwordField({
         onPressed: onToggleVisibility,
       ),
     ),
-    validator: validator ??
-            (text) {
-          if (text == null || text.isEmpty) {
-            return 'Password cannot be empty';
-          }
-          if (text.length < 6) return "Minimum 6 characters";
-          return null;
-        },
+    validator: validator,
     autovalidateMode: AutovalidateMode.onUserInteraction,
   );
 }
