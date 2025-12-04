@@ -255,7 +255,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "Have an account?",
+                              "Doesn't have an account?",
                               style: TextStyle(
                                 color: Colors.grey,
                                 fontSize: 15,
@@ -265,7 +265,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             GestureDetector(
                               onTap: () {},
                               child: Text(
-                                "Sign In",
+                                "Register",
                                 style: TextStyle(
                                   fontSize: 15,
                                   color: darkTheme
