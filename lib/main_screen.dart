@@ -26,6 +26,23 @@ class _MainScreenState extends State<MainScreen> {
   double waitingResponsefromDriverContainerHeight = 0;
   double assignedDriverInfoContainerHeight = 0;
 
+  Position? userCurrentPosition;
+  var geoLocation = Geolocator();
+
+  LocationPermission? _locationPermission;
+  double bottomPaddingOfMap = 0;
+
+  List<LatLng> pLineCoordinatedList = [];
+  Set<Polyline> polylineSet={};
+  Set<Marker> markerSet={};
+  Set<Circle> circleSet={}''
+  // String userName="";
+  // String userEmail="";
+
+  bool openNavigationDrawer=true;
+  bool activeNearbyDriverKeysLoaded=false;
+  BitmapDescriptor? activeNearbyIcon;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
