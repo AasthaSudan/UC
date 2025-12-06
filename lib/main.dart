@@ -4,7 +4,7 @@ import 'my_themes.dart';
 import 'register_screen.dart';
 import 'splash.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'firebase_options.dart';l
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
