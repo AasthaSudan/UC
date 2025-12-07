@@ -45,11 +45,28 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(
-      //   title: Text("Main Screen"),
-      // ),
-      // body: Center(
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      }
+      child: Scaffold(
+        body: Stack(
+        children: [
+          GoogleMap(
+            mapType: MapType.normal,
+            myLocationButtonEnabled: true,
+            zoomGesturesEnabled: true,
+            zoomControlsEnabled: true,
+            initialCameraPosition: _kGooglePlex,
+            polylines: polylineSet,
+            markers: markerSet,
+            circles: circleSet,
+
+    )
+        ]
+    )
+    )
+
       //   child: Text(
       //     "Hello Trippo!",
       //     style: TextStyle(fontSize: 24),
