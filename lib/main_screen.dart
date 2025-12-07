@@ -1,4 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart' as loc;
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -9,8 +13,8 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
 
-  LatLng ? pickLocation;
-  loc.Location location=loc.location();
+  LatLng? pickLocation;
+  loc.Location location = loc.Location();
   String? _address;
 
   final Completer<GoogleMapController> _controllerGoogleMap = Completer();
@@ -20,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
     zoom: 14.4746,
   );
 
-  GlobalKey<ScaffoldState> scaffoldState= GlobalKey<ScaffoldState>();
+  GlobalKey<ScaffoldState> scaffoldState = GlobalKey<ScaffoldState>();
 
   double searchLocationContainerHeight = 220;
   double waitingResponsefromDriverContainerHeight = 0;
@@ -33,14 +37,12 @@ class _MainScreenState extends State<MainScreen> {
   double bottomPaddingOfMap = 0;
 
   List<LatLng> pLineCoordinatedList = [];
-  Set<Polyline> polylineSet={};
-  Set<Marker> markerSet={};
-  Set<Circle> circleSet={}''
-  // String userName="";
-  // String userEmail="";
+  Set<Polyline> polylineSet = {};
+  Set<Marker> markerSet = {};
+  Set<Circle> circleSet = {};
 
-  bool openNavigationDrawer=true;
-  bool activeNearbyDriverKeysLoaded=false;
+  bool openNavigationDrawer = true;
+  bool activeNearbyDriverKeysLoaded = false;
   BitmapDescriptor? activeNearbyIcon;
 
   @override
@@ -48,30 +50,27 @@ class _MainScreenState extends State<MainScreen> {
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
-      }
+      },
       child: Scaffold(
+        key: scaffoldState,
         body: Stack(
-        children: [
-          GoogleMap(
-            mapType: MapType.normal,
-            myLocationButtonEnabled: true,
-            zoomGesturesEnabled: true,
-            zoomControlsEnabled: true,
-            initialCameraPosition: _kGooglePlex,
-            polylines: polylineSet,
-            markers: markerSet,
-            circles: circleSet,
-
-    )
-        ]
-    )
-    )
-
-      //   child: Text(
-      //     "Hello Trippo!",
-      //     style: TextStyle(fontSize: 24),
-      //   ),
-      // ),
+          children: [
+            GoogleMap(
+              mapType: MapType.normal,
+              myLocationButtonEnabled: true,
+              zoomGesturesEnabled: true,
+              zoomControlsEnabled: true,
+              initialCameraPosition: _kGooglePlex,
+              polylines: polylineSet,
+              markers: markerSet,
+              circles: circleSet,
+              onMapCreated: (GoogleMapController controller) {
+                _controllerGoogleMap.complete(controller);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
