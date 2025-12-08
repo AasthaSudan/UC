@@ -14,10 +14,25 @@ class AssistantMethods {
         .child("users")
         .child(currentUser!.uid);
 
-    DatabaseEvent event = await userRef.once();
+    userRef.once().then((snap) {
+      if (snap.snapshot.value != null) {
+        userModelCurrentInfo = UserModel.fromSnapshot(event.snapshot);
+      }
+    });
+  }
+  static Future<String> searchAddressForGeographicCoOrdinates(Position position, context) async {
+    Strin apiUrl= ;
+    String humanReadableAddress="";
+    var requestResponse=await RequestAssistant.receiveRequest(apiUrl);
 
-    if (event.snapshot.value != null) {
-      userModelCurrentInfo = UserModel.fromSnapshot(event.snapshot);
+    if(requetResponse != "Error Occurred. Failed. No Response.") {
+      humanReadableAddress=requestResponse["results"][0]["formatted_address"];
+
+      Directions userPickUpAddress = Directions();
+      userPickUpAddress.locationLatitude=position.latitude;
+      userPickUpAddress.locationLongitude=position.longitude;
+
     }
+    return humanReadableAddress;
   }
 }

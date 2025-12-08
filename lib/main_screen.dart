@@ -45,6 +45,23 @@ class _MainScreenState extends State<MainScreen> {
   bool activeNearbyDriverKeysLoaded = false;
   BitmapDescriptor? activeNearbyIcon;
 
+  locateUserPosition() async {
+    Position cPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    userCurrentPosition = cPosition;
+
+    LatLng latLngPosition = LatLng(userCurrentPosition!.latitude, userCurrentPosition!.longitude);
+    CameraPosition cameraPosition = CameraPosition(target: latLngPosition, zoom : 15);
+
+    newGoogleMapController!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+
+    String humanReadableAddress = await AssistantMethods.searchAddressForGeoraphicCoOrdinates(userCurrentPosition!, context);
+    print("This is our address = " + humanReadableAddress);
+  }
+
+  getAddressFromLatLng() async{
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -66,8 +83,51 @@ class _MainScreenState extends State<MainScreen> {
               circles: circleSet,
               onMapCreated: (GoogleMapController controller) {
                 _controllerGoogleMap.complete(controller);
+                newGoogleMapController = controller;
+
+                setState(() {
+
+                });
+
+                locateUserPosition();
+              },
+
+              onCameraMove: (CameraPosition? position) {
+                if(pickLocation != position!.target) {
+                  setState(() {
+                    pickLocation = position.target;
+                  });
+                }
+              },
+              onCameraIdle: () {
+                getAddressFromLatLng();
               },
             ),
+            Align(
+              alignment: Alignment.center,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 35.0),
+                child: Image.asset("assets/images/pck.png", height: 45, width: 45,),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              left: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.black
+                  ),
+                  color: Colors.white,
+                ),
+                padding: EdgeInsets.all(20),
+                child: Text(_address ?? "Set your pockuploaction",
+                overflow: TextOverflow.visible,
+                softWrap: true,
+                ),
+              )
+            )
           ],
         ),
       ),
