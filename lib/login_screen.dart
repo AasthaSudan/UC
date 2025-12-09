@@ -22,7 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _passwordVisible = false;
 
-  // LOGIN FUNCTION
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -62,7 +61,6 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 40),
 
-                // IMAGE ON TOP
                 Image.asset(
                   darkTheme
                       ? 'assets/images/img_1.png'
@@ -71,7 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                // TITLE
                 Text(
                   'Login',
                   style: TextStyle(
@@ -83,14 +80,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                // FIELDS
                 Padding(
                   padding: const EdgeInsets.fromLTRB(15, 10, 15, 40),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
-                        // EMAIL FIELD
                         _inputField(
                           darkTheme: darkTheme,
                           controller: emailController,
@@ -109,7 +104,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // PASSWORD FIELD
                         _passwordField(
                           darkTheme: darkTheme,
                           controller: passwordController,
@@ -133,7 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 10),
 
-                        // FORGOT PASSWORD
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -159,7 +152,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 30),
 
-                        // LOGIN BUTTON
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: darkTheme
@@ -181,7 +173,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // REGISTER LINK
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -218,9 +209,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// =============================
-// REUSABLE INPUT FIELD
-// =============================
 Widget _inputField({
   required bool darkTheme,
   required TextEditingController controller,
@@ -249,9 +237,6 @@ Widget _inputField({
   );
 }
 
-// =============================
-// PASSWORD FIELD
-// =============================
 Widget _passwordField({
   required bool darkTheme,
   required TextEditingController controller,
