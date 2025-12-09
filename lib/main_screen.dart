@@ -66,7 +66,10 @@ class _MainScreenState extends State<MainScreen> {
         googleMapApiKey: mapKey
       );
       setState(() {
-        _address=data.address;
+        userPickUpAddress.locationLatitude=pickLocation!.latitude;
+        userPickUpAddress.locationLongitude=pickLocation!.longitude;
+        userPickAddress.locationName=data.address;;
+        // _address=data.address;
       });
     } catch(e) {
       print(e);
@@ -112,6 +115,7 @@ class _MainScreenState extends State<MainScreen> {
 
                 setState(() {
 
+
                 });
 
                 locateUserPosition();
@@ -147,7 +151,9 @@ class _MainScreenState extends State<MainScreen> {
                   color: Colors.white,
                 ),
                 padding: EdgeInsets.all(20),
-                child: Text(_address ?? "Set your pickuploaction",
+                child: Text(
+                  Provider.of<AppInfo>(context).userPickUpLocation!=null ? (Provider.of<AppInfo>(context).userPickUpLocation!.locationName!).substring(0,24)+"..." :"Not Getting Address",
+                  // _address ?? "Set your pickuploaction",
                 overflow: TextOverflow.visible,
                 softWrap: true,
                 ),

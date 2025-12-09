@@ -15,13 +15,16 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Demo',
-      themeMode: ThemeMode.system,
-      theme: MyThemes.lightTheme,
-      darkTheme: MyThemes.darkTheme,
-      home: SplashScreen(),
-      debugShowCheckedModeBanner: false,
+    return ChangeNotifierProvider(
+      create: (context) => AppInfo(),
+      child : MaterialApp(
+       title: 'Demo',
+       themeMode: ThemeMode.system,
+       theme: MyThemes.lightTheme,
+       darkTheme: MyThemes.darkTheme,
+       home: SplashScreen(),
+       debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
