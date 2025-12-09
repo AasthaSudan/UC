@@ -59,7 +59,32 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   getAddressFromLatLng() async{
+    try {
+      GeoData data =await Geocoder2.getDataFromCoordinates(
+        latitude: pickLocation!.latitude,
+        longitude: pickLocation.longitude,
+        googleMapApiKey: mapKey
+      );
+      setState(() {
+        _address=data.address;
+      });
+    } catch(e) {
+      print(e);
+    }
+  }
 
+  checkIfLocationPermissionAllowed() {
+    _locationPermission=await Geolocator.requestPermission();
+
+    if(_locationPermission == LocationPermission.denied) {
+      _locationPermission = await Geolocator.requestPermission();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    checkIfLocationPermissionAllowed();
   }
 
   @override
@@ -74,7 +99,7 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             GoogleMap(
               mapType: MapType.normal,
-              myLocationButtonEnabled: true,
+              myLocationEnabled: true,
               zoomGesturesEnabled: true,
               zoomControlsEnabled: true,
               initialCameraPosition: _kGooglePlex,
@@ -122,7 +147,7 @@ class _MainScreenState extends State<MainScreen> {
                   color: Colors.white,
                 ),
                 padding: EdgeInsets.all(20),
-                child: Text(_address ?? "Set your pockuploaction",
+                child: Text(_address ?? "Set your pickuploaction",
                 overflow: TextOverflow.visible,
                 softWrap: true,
                 ),

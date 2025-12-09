@@ -31,6 +31,7 @@ class AssistantMethods {
       Directions userPickUpAddress = Directions();
       userPickUpAddress.locationLatitude=position.latitude;
       userPickUpAddress.locationLongitude=position.longitude;
+      userPickAddress.locationName=humanReadableAddress;
 
     }
     return humanReadableAddress;
