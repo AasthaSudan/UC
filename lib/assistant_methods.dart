@@ -16,26 +16,25 @@ class AssistantMethods {
 
     userRef.once().then((snap) {
       if (snap.snapshot.value != null) {
-        userModelCurrentInfo = UserModel.fromSnapshot(event.snapshot);
+        userModelCurrentInfo = UserModel.fromSnapshot(snap.snapshot);
       }
     });
   }
-  static Future<String> searchAddressForGeographicCoOrdinates(Position position, context) async {
-    Strin apiUrl= ;
-    String humanReadableAddress="";
-    var requestResponse=await RequestAssistant.receiveRequest(apiUrl);
 
-    if(requetResponse != "Error Occurred. Failed. No Response.") {
-      humanReadableAddress=requestResponse["results"][0]["formatted_address"];
+  static Future<String> searchAddressForGeographicCoOrdinates(Position position, context) async {
+    String apiUrl = ''; // You need to define the API URL
+    String humanReadableAddress = "";
+    var requestResponse = await RequestAssistant.receiveRequest(apiUrl);
+
+    if (requestResponse != "Error Occurred. Failed. No Response.") {
+      humanReadableAddress = requestResponse["results"][0]["formatted_address"];
 
       Directions userPickUpAddress = Directions();
-      userPickUpAddress.locationLatitude=position.latitude;
-      userPickUpAddress.locationLongitude=position.longitude;
-      userPickAddress.locationName=humanReadableAddress;
+      userPickUpAddress.locationLatitude = position.latitude;
+      userPickUpAddress.locationLongitude = position.longitude;
+      userPickUpAddress.locationName = humanReadableAddress;
 
-      Provider.of<AppInfo>(context, listen:false).updatePickUpLocationAddress(userPickUpAddress);
-
-
+      Provider.of<AppInfo>(context, listen: false).updatePickUpLocationAddress(userPickUpAddress);
     }
     return humanReadableAddress;
   }
