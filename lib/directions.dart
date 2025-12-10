@@ -1,6 +1,6 @@
 class Directions {
   String? humanReadableAddress;
-  Strih? locationName;
+  String? locationName;
   String? locationId;
   double? locationLatitude;
   double? locationLongitude;
@@ -11,5 +11,5 @@ class Directions {
     this.locationId,
     this.locationLatitude,
     this.locationLongitude,
-})
+  });
 }
