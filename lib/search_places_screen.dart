@@ -17,7 +17,19 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
         FutureScope.of(context).unfocus();
       },
       child: Scaffold(
-        backgroundColor: darkTheme ? Colors.amber.shade400 : Colors.blue,
+        backgroundColor: darkTheme ? Colors.black : Colors.white,
+        appBar: AppBar(
+          backgroundColor: darkTheme ? Colors.amber.shade400 : Colors.blue,
+          leading: GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
+            child: Icon(Icons.arrow_back, color: darkTheme ? Colors.black : Colors.white,),
+        ),
+          title: Text(
+            "Search & Set dropoff location",
+
+          )
       )
     );
   }
