@@ -28,9 +28,17 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
         ),
           title: Text(
             "Search & Set dropoff location",
-
-          )
-      )
+            style: TextStyle(darkTheme ? Colors.black : Colors.white,),
+          ),
+          elevation: 0.0,
+      ),
+        body: Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(),
+            )
+          ]
+        )
     );
   }
 }

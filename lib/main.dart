@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
        themeMode: ThemeMode.system,
        theme: MyThemes.lightTheme,
        darkTheme: MyThemes.darkTheme,
-       home: SplashScreen(),
+       home: SearchPlacesScreen(),
        debugShowCheckedModeBanner: false,
       ),
     );
