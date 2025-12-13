@@ -1,0 +1,29 @@
+# Flutter/Dart specific language detection
+*.dart linguist-detectable=true
+*.dart linguist-language=Dart
+
+# Ignore auto-generated and build files from language statistics
+*.html linguist-vendored
+*.css linguist-vendored
+*.js linguist-vendored
+*.cmake linguist-vendored
+*.cc linguist-vendored
+*.cpp linguist-vendored
+*.h linguist-vendored
+*.swift linguist-vendored
+*.kt linguist-vendored
+*.gradle linguist-vendored
+
+# Mark generated directories as vendored (ignored in statistics)
+build/* linguist-vendored
+android/* linguist-vendored
+ios/* linguist-vendored
+web/* linguist-vendored
+windows/* linguist-vendored
+linux/* linguist-vendored
+macos/* linguist-vendored
+
+# Keep only the Flutter/Dart source code in language stats
+lib/** linguist-vendored=false
+test/** linguist-vendored=false
+
