@@ -1,6 +1,11 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:provider/provider.dart';
 import 'global.dart';
 import 'user_model.dart';
+import 'directions.dart';
+import 'app_info.dart';
 
 class AssistantMethods {
 
@@ -21,21 +26,30 @@ class AssistantMethods {
     });
   }
 
-  static Future<String> searchAddressForGeographicCoOrdinates(Position position, context) async {
-    String apiUrl = ''; // You need to define the API URL
+  static Future<String> searchAddressForGeographicCoordinates(Position position, context) async {
     String humanReadableAddress = "";
-    var requestResponse = await RequestAssistant.receiveRequest(apiUrl);
 
-    if (requestResponse != "Error Occurred. Failed. No Response.") {
-      humanReadableAddress = requestResponse["results"][0]["formatted_address"];
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
 
-      Directions userPickUpAddress = Directions();
-      userPickUpAddress.locationLatitude = position.latitude;
-      userPickUpAddress.locationLongitude = position.longitude;
-      userPickUpAddress.locationName = humanReadableAddress;
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        humanReadableAddress = "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
 
-      Provider.of<AppInfo>(context, listen: false).updatePickUpLocationAddress(userPickUpAddress);
+        Directions userPickUpAddress = Directions();
+        userPickUpAddress.locationLatitude = position.latitude;
+        userPickUpAddress.locationLongitude = position.longitude;
+        userPickUpAddress.locationName = humanReadableAddress;
+
+        Provider.of<AppInfo>(context, listen: false).updatePickUpLocationAddress(userPickUpAddress);
+      }
+    } catch (e) {
+      print("Error getting address: $e");
     }
+
     return humanReadableAddress;
   }
 }

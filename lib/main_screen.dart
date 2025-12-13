@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:location/location.dart' as loc;
+import 'package:provider/provider.dart';
+import 'package:geocoding/geocoding.dart';
+import 'app_info.dart';
+import 'directions.dart';
+import 'assistant_methods.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -27,7 +32,7 @@ class _MainScreenState extends State<MainScreen> {
   GlobalKey<ScaffoldState> scaffoldState = GlobalKey<ScaffoldState>();
 
   double searchLocationContainerHeight = 220;
-  double waitingResponsefromDriverContainerHeight = 0;
+  double waitingResponseFromDriverContainerHeight = 0;
   double assignedDriverInfoContainerHeight = 0;
 
   Position? userCurrentPosition;
@@ -62,19 +67,24 @@ class _MainScreenState extends State<MainScreen> {
 
   getAddressFromLatLng() async {
     try {
-      GeoData data = await Geocoder2.getDataFromCoordinates(
-        latitude: pickLocation!.latitude,
-        longitude: pickLocation!.longitude,
-        googleMapApiKey: "YOUR_GOOGLE_MAP_API_KEY", // Replace with actual API Key
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        pickLocation!.latitude,
+        pickLocation!.longitude,
       );
-      setState(() {
-        Directions userPickAddress = Directions();
-        userPickAddress.locationLatitude = pickLocation!.latitude;
-        userPickAddress.locationLongitude = pickLocation!.longitude;
-        userPickAddress.locationName = data.address;
 
-        Provider.of<AppInfo>(context, listen: false).updatePickUpLocationAddress(userPickAddress);
-      });
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        String address = "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+
+        setState(() {
+          Directions userPickAddress = Directions();
+          userPickAddress.locationLatitude = pickLocation!.latitude;
+          userPickAddress.locationLongitude = pickLocation!.longitude;
+          userPickAddress.locationName = address;
+
+          Provider.of<AppInfo>(context, listen: false).updatePickUpLocationAddress(userPickAddress);
+        });
+      }
     } catch (e) {
       print(e);
     }
@@ -180,12 +190,14 @@ class _MainScreenState extends State<MainScreen> {
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          Provider.of<AppInfo>(context).userPickUpLocation != null
-                                              ? (Provider.of<AppInfo>(context).userPickUpLocation!.locationName!).substring(0, 24) + "..."
-                                              : "Not Getting Address",
-                                          style: TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 14,
+                                          Text(
+                                            Provider.of<AppInfo>(context).userPickUpLocation != null
+                                                ? (Provider.of<AppInfo>(context).userPickUpLocation!.locationName!).substring(0, 24) + "..."
+                                                : "Not Getting Address",
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 14,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -194,7 +206,7 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                                 SizedBox(height: 5),
                                 Divider(
-                                  height: 1, // Fixed typo from `heoght` to `height`
+                                  height: 1,
                                   thickness: 2,
                                   color: darkTheme ? Colors.amber.shade400 : Colors.blue,
                                 ),
@@ -218,12 +230,14 @@ class _MainScreenState extends State<MainScreen> {
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            Provider.of<AppInfo>(context).userDropOffLocation != null
-                                                ? (Provider.of<AppInfo>(context).userDropOffLocation!.locationName!).substring(0, 24) + "..."
-                                                : "Where to?",
-                                            style: TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 14,
+                                            Text(
+                                              Provider.of<AppInfo>(context).userDropOffLocation != null
+                                                  ? (Provider.of<AppInfo>(context).userDropOffLocation!.locationName!).substring(0, 24) + "..."
+                                                  : "Where to?",
+                                              style: TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 14,
+                                              ),
                                             ),
                                           ],
                                         ),
