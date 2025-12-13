@@ -30,7 +30,7 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
             ),
           ),
           title: Text(
-            "Search & Set dropoff location",
+            "Search & Set Drop Off location",
             style: TextStyle(
               color: darkTheme ? Colors.black : Colors.white,
             ),
