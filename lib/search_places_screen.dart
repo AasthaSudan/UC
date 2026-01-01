@@ -40,8 +40,62 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
         body: Column(
           children: [
             Container(
-              decoration: BoxDecoration(),
-            )
+              decoration: BoxDecoration(
+                color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white54,
+                    blurRadius: 8,
+                    spreadRadius: 0.5,
+                    offset: Offset(
+                      0.7,
+                      0.7,
+                    ),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(10.0),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.adjust_sharp,
+                          color: darkTheme ? Colors.black : Colors.white,
+                        ),
+
+                        SizedBox(width: 18.0,),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.all(8),
+                            child: TextField(
+                              onChanged: (value) {
+
+                              },
+                              decoration: InputDecoration(
+                                hintText: "Search Drop Off Location",
+                                hintStyle: TextStyle(
+                                  color: darkTheme ? Colors.grey : Colors.grey,
+                                ),
+                                fillColor: darkTheme ? Colors.black : Colors.white54,
+                                filled: true,
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.only(
+                                  left: 11,
+                                  top: 8,
+                                  bottom: 8,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
