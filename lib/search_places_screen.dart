@@ -71,6 +71,7 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
                             padding: EdgeInsets.all(8),
                             child: TextField(
                               onChanged: (value) {
+                                findPlaceAutoCompleteSearch(value);
 
                               },
                               decoration: InputDecoration(
@@ -82,7 +83,7 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
                                 filled: true,
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.only(
-                                  left: 11,
+                                  left: 10,
                                   top: 8,
                                   bottom: 8,
                                 ),
