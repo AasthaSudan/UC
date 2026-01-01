@@ -8,6 +8,26 @@ class SearchPlacesScreen extends StatefulWidget {
 }
 
 class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
+  if(inputText.length>1) {
+    String urlAutoCompleteSearch =
+        "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$inputText&key=$mapKey&components=country:India";
+
+    var responseApi = await RequestAssistant.receiveRequest(urlAutoCompleteSearch);
+
+    if (responseApi == "Error Occurred. Failed. No Response.") {
+      return;
+    }
+    if(responseAutoCompleteSearch["status"]=="OK") {
+      var placePredictions=responseAutoCompleteSearch["predictions"];
+
+      var placePredictionsList=(placePredictions as List).map((jsonData) => PredictedPlaces.fromJson(jsonData)).toList();
+
+      setState(() {
+        placesPredictedList=placePredictionsList;
+      });
+  }
+  }
+  }
   @override
   Widget build(BuildContext context) {
     bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
@@ -97,6 +117,24 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
                 ),
               ),
             ),
+            (placesPredictedList.length>0)
+            ? Expanded(
+              child: ListView.separated(
+                itemCount: placesPredictedList.length,
+                itemBuilder: (context, index) {
+                  return PlacePredictionTileDesign(
+                    predictedPlaces: placesPredictedList[index],
+                  );
+                },
+                separatorBuilder: (BuildContext context, int index) {
+                  return Divider(
+                    height: 0,
+                      color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                      thickness:0,
+                  ),
+                }
+              ),
+            ) : Container(),
           ],
         ),
       ),

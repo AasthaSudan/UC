@@ -36,7 +36,8 @@ var responseApi=await RequestAssistant.receiveRequest(
 
         setState(() {
           userDropOffLocation=directions.locationName;
-    })
+    });
+        Navigator.pop(context, "obtainDirectionResponse")
       }
 
   }
