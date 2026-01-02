@@ -82,10 +82,100 @@ class _MainScreenState extends State<MainScreen> {
     );
 
     var directionDetailsInfo = await AssistantMethods.obtainOriginToDestinationDirectionDetails(originLatLng, destinationLatLng);
+    setState(() {
+      tripDirectionDetailsInfo = directionDetailsInfo;
+    });
 
+    Navigator.pop(context);
+    PolylinePoints polylinePoints = PolylinePoints();
+    List<PointLatLng> decodedPolyLinePointsResultList = polylinePoints.decodePolyline(directionDetailsInfo!.e_points
 
+    pLineCoordinatedList.clear();
+    if(decodedPolyLinePointsResultList.isNotEmpty) {
+      decodedPolyLinePointsResultList.forEach((PointLatLng pointLatLng) {
+        pLineCoordinatedList.add(
+            LatLng(pointLatLng.latitude, pointLatLng.longitude));
+      })
+    }
+    polylineSet.clear();
+    setState(() {
+      Polyline polyline = Polyline(
+        polylineId: PolylineId("PolylineID"),
+        color: darkTheme ? Colors.amber.Accent : Colors.blue,
+        points: pLineCoordinatedList,
+        jointType: JointType.round,
+        width: 5,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        geodesic: true,
+      );
 
-  }
+      polylineSet.add(polyline);
+    });
+
+    LatLngBounds latLngBounds;
+    if(originLatLng.latitude > destinationLatLng.latitude && originLatLng.longitude > destinationLatLng.longitude) {
+      latLngBounds = LatLngBounds(southwest: destinationLatLng, northeast: originLatLng);
+    } else if(originLatLng.longitude > destinationLatLng.longitude) {
+      boundsLatLng = LatLngBounds(
+        southwest: LatLng(originLatLng.latitude, destinationLatLng.longitude),
+        northeast: LatLng(destinationLatLng.latitude, originLatLng.longitude),
+      );
+    }
+    else if(originLatLng.latitude > destinationLatLng.latitude){
+      boundsLatLng=LatLngBounds(
+        southwest: LatLng(destinationLatLng.latitude, originLatLng.longitude),
+        northeast: LatLng(originLatLng.latitude, destinationLatLng.longitude),
+      );
+    } else {
+      boundsLatLng = LatLngBounds(southwest: originLatLng, northeast: destinationLatLng);
+    }
+
+    newGoogleMapController!.animateCamera(CameraUpdate.newLatLngBounds(latLngBounds, 70));
+
+    Marker originMarker = Marker(
+      markerId: MarkerId("originID"),
+      position: originLatLng,
+        infoWindow: InfoWindow(title: originPosition.locationName, snippet: "Origin"),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+    );
+
+    Marker destinationMarker = Marker(
+      markerId: MarkerId("destinationID"),
+      position: destinationLatLng,
+        infoWindow: InfoWindow(title: destinationPosition.locationName, snippet: "Destination"),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+    );
+
+    setState(() {
+      markerSet.add(originMarker);
+      markerSet.add(destinationMarker);
+    });
+
+      Circle originCircle = Circle(
+        circleId: CircleId("originID"),
+        strokeColor: Colors.green,
+        strokeWidth: 3,
+        radius: 12,
+        fillColor: Colors.greenAccent,
+        center: originLatLng,
+      );
+
+      Circle destinationCircle = Circle(
+        circleId: CircleId("destinationID"),
+        strokeColor: Colors.red,
+        strokeWidth: 3,
+        radius: 12,
+        fillColor: Colors.redAccent,
+        center: destinationLatLng,
+      );
+
+      setState(() {
+        circleSet.add(originCircle);
+        circleSet.add(destinationCircle);
+      });
+    }
+
   getAddressFromLatLng() async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(

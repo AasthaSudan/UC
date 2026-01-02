@@ -52,4 +52,24 @@ class AssistantMethods {
 
     return humanReadableAddress;
   }
+
+  static Future<DirectionsDetailsInfo> obtainOriginToDestinationDetails(LatLng originPosition, LatLng destinationPosition) async {
+    String url = "https://maps.googleapis.com/maps/api/directions/json?origin=${originPosition.latitude},${originPosition.longitude}&destination=${destinationPosition.latitude},${destinationPosition.longitude}&key=$mapKey";
+    var responseDirectionApi = await RequestAssistant.receiveRequest(url);
+
+    // if(responseDirectionApi == "Error Occurred. Failed. No Response."){
+    //   return null;
+    // )
+
+    DirectionsDetailsInfo directionsDetailsInfo = DirectionsDetailsInfo();
+    directionsDetailsInfo.e_points = responseDirectionApi["routes"][0]["overview_polyline"]["points"];
+    directionsDetailsInfo.distance_text = responseDirectionApi["routes"][0]["legs"][0]["distance"]["text"];
+    directionsDetailsInfo.distance_value = responseDirectionApi["routes"][0]["legs"][0]["distance"]["value"];
+    directionsDetailsInfo.duration_text = responseDirectionApi["routes"][0]["legs"][0]["distance"]["text"];
+    directionsDetailsInfo.duration_value = responseDirectionApi["routes"][0]["legs"][0]["distance"]["value"];
+
+
+
+  }
+    )
 }
