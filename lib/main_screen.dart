@@ -57,14 +57,35 @@ class _MainScreenState extends State<MainScreen> {
     LatLng latLngPosition = LatLng(userCurrentPosition!.latitude, userCurrentPosition!.longitude);
     CameraPosition cameraPosition = CameraPosition(target: latLngPosition, zoom : 15);
 
-    _controllerGoogleMap.future.then((controller) {
-      controller.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
-    });
+    newGoogleMapController!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
 
     String humanReadableAddress = await AssistantMethods.searchAddressForGeographicCoordinates(userCurrentPosition!, context);
     print("This is our address = " + humanReadableAddress);
+
+    userName=userModelCurrentInfo!.name;
+    userEmail=userModelCurrentInfo!.email;
+    userPhone=userModelCurrentInfo!.phone;
   }
 
+  drawPolyLineFromOriginToDestination(bool darkTheme) async {
+    var originPosition = Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
+    var destinationPosition = Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
+
+    var originLatLng = LatLng(originPosition!.locationLatitude, originPosition!.locationLongitude!);
+    var destinationLatLng = LatLng(destinationPosition!.locationLatitude, destinationPosition!.locationLongitude!);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => ProgressDialog(
+        message: "Please wait...",
+      ),
+    );
+
+    var directionDetailsInfo = await AssistantMethods.obtainOriginToDestinationDirectionDetails(originLatLng, destinationLatLng);
+
+
+
+  }
   getAddressFromLatLng() async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
@@ -214,7 +235,22 @@ class _MainScreenState extends State<MainScreen> {
                                 Padding(
                                   padding: EdgeInsets.all(5),
                                   child: GestureDetector(
-                                    onTap: () {},
+                                    onTap: () async {
+                                      var responseFromSearchScreen = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => SearchPlacesScreen(),
+                                        ),
+                                      );
+
+                                      if (responseFromSearchScreen == "obtainDirectionResponse") {
+                                        setState(() {
+                                          openNavigationDrawer = false;
+                                        });
+                                      }
+
+                                      await drawPolyLineFromOriginToDestination(darkTheme);
+                                    },
                                     child: Row(
                                       children: [
                                         Icon(Icons.location_on_outlined, color: darkTheme ? Colors.amber.shade400 : Colors.blue),
