@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'assistant_methods.dart';
+import 'place_prediction_tile.dart';
+import 'app_info.dart';
 
 class SearchPlacesScreen extends StatefulWidget {
   const SearchPlacesScreen({super.key});
@@ -8,26 +12,28 @@ class SearchPlacesScreen extends StatefulWidget {
 }
 
 class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
-  if(inputText.length>1) {
-    String urlAutoCompleteSearch =
-        "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$inputText&key=$mapKey&components=country:India";
+  List<Map<String, dynamic>> placesPredictedList = [];
+  bool isSearching = false;
 
-    var responseApi = await RequestAssistant.receiveRequest(urlAutoCompleteSearch);
+  void findPlaceAutoCompleteSearch(String inputText) async {
+    if (inputText.length > 2) {
+      setState(() {
+        isSearching = true;
+      });
 
-    if (responseApi == "Error Occurred. Failed. No Response.") {
-      return;
-    }
-    if(responseAutoCompleteSearch["status"]=="OK") {
-      var placePredictions=responseAutoCompleteSearch["predictions"];
-
-      var placePredictionsList=(placePredictions as List).map((jsonData) => PredictedPlaces.fromJson(jsonData)).toList();
+      var results = await AssistantMethods.searchPlaces(inputText);
 
       setState(() {
-        placesPredictedList=placePredictionsList;
+        placesPredictedList = results;
+        isSearching = false;
       });
+    } else {
+      setState(() {
+        placesPredictedList = [];
+      });
+    }
   }
-  }
-  }
+
   @override
   Widget build(BuildContext context) {
     bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
@@ -67,10 +73,7 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
                     color: Colors.white54,
                     blurRadius: 8,
                     spreadRadius: 0.5,
-                    offset: Offset(
-                      0.7,
-                      0.7,
-                    ),
+                    offset: Offset(0.7, 0.7),
                   ),
                 ],
               ),
@@ -84,20 +87,18 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
                           Icons.adjust_sharp,
                           color: darkTheme ? Colors.black : Colors.white,
                         ),
-
-                        SizedBox(width: 18.0,),
+                        SizedBox(width: 18.0),
                         Expanded(
                           child: Padding(
                             padding: EdgeInsets.all(8),
                             child: TextField(
                               onChanged: (value) {
                                 findPlaceAutoCompleteSearch(value);
-
                               },
                               decoration: InputDecoration(
                                 hintText: "Search Drop Off Location",
                                 hintStyle: TextStyle(
-                                  color: darkTheme ? Colors.grey : Colors.grey,
+                                  color: Colors.grey,
                                 ),
                                 fillColor: darkTheme ? Colors.black : Colors.white54,
                                 filled: true,
@@ -111,30 +112,57 @@ class _SearchPlacesScreenState extends State<SearchPlacesScreen> {
                             ),
                           ),
                         ),
+                        if (isSearching)
+                          Padding(
+                            padding: EdgeInsets.only(right: 10),
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  darkTheme ? Colors.black : Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ],
                 ),
               ),
             ),
-            (placesPredictedList.length>0)
-            ? Expanded(
+            (placesPredictedList.length > 0)
+                ? Expanded(
               child: ListView.separated(
                 itemCount: placesPredictedList.length,
                 itemBuilder: (context, index) {
                   return PlacePredictionTileDesign(
-                    predictedPlaces: placesPredictedList[index],
+                    predictedPlace: placesPredictedList[index],
                   );
                 },
                 separatorBuilder: (BuildContext context, int index) {
                   return Divider(
                     height: 0,
-                      color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                      thickness:0,
-                  ),
-                }
+                    color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                    thickness: 0,
+                  );
+                },
               ),
-            ) : Container(),
+            )
+                : Container(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                placesPredictedList.isEmpty && !isSearching
+                    ? "Start typing to search for places..."
+                    : "",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ],
         ),
       ),

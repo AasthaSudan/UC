@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:predicted_places.dart';
+import 'package:provider/provider.dart';
+import 'directions.dart';
+import 'app_info.dart';
+import 'global.dart';
 
 class PlacePredictionTileDesign extends StatefulWidget {
-  const PlacePredictionTileDesign({this.predictedPlaces});
+  final Map<String, dynamic> predictedPlace;
+
+  const PlacePredictionTileDesign({Key? key, required this.predictedPlace}) : super(key: key);
 
   @override
   State<PlacePredictionTileDesign> createState() => _PlacePredictionTileDesignState();
@@ -10,48 +15,88 @@ class PlacePredictionTileDesign extends StatefulWidget {
 
 class _PlacePredictionTileDesignState extends State<PlacePredictionTileDesign> {
 
-  getPlaceDirectionDetails(String? placeId, context) async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => ProgressDialog(
-        message: "Setting Drop Off, Please wait...",),
-    )
-    );
-var responseApi=await RequestAssistant.receiveRequest(
-    "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$mapKey");
-      Navigator.pop(context);
+  void setDropOffLocation(BuildContext context) {
+    // Extract place information from Nominatim result
+    String placeName = widget.predictedPlace['display_name'] ?? '';
+    double lat = double.parse(widget.predictedPlace['lat'] ?? '0');
+    double lon = double.parse(widget.predictedPlace['lon'] ?? '0');
+    String placeId = widget.predictedPlace['place_id']?.toString() ?? '';
 
-      if(responseApi == "Error Occurred. Failed. No Response."){
-        return;
-    }
+    Directions directions = Directions();
+    directions.locationName = placeName;
+    directions.locationId = placeId;
+    directions.locationLatitude = lat;
+    directions.locationLongitude = lon;
 
-      if(responseApi["status"] == "OK"){
-        Directions directions=Directions();
-        directions.locationName=responseApi["result"]["name"];
-        directions.locationId=placeId;
-        directions.locationLatitude=responseApi["result"]["geometry"]["location"]["lat"];
-        directions.locationLongitude=responseApi["result"]["geometry"]["location"]["lng"];
+    Provider.of<AppInfo>(context, listen: false).updateDropOffLocationAddress(directions);
 
-        Provider.of<AppInfo>(context, listen: false).updateDropOffLocationAddress(directions);
-
-        setState(() {
-          userDropOffLocation=directions.locationName;
+    setState(() {
+      userDropOffLocation = placeName;
     });
-        Navigator.pop(context, "obtainDirectionResponse")
-      }
 
+    Navigator.pop(context, "obtainDirectionResponse");
   }
+
   @override
   Widget build(BuildContext context) {
-    bool darkTheme=MediaQuery.of(context).platformBrightness==Brightness.dark;
+    bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
+
+    // Extract display name parts
+    String displayName = widget.predictedPlace['display_name'] ?? '';
+    List<String> parts = displayName.split(',');
+    String mainText = parts.isNotEmpty ? parts[0] : displayName;
+    String secondaryText = parts.length > 1 ? parts.sublist(1).join(',').trim() : '';
+
     return ElevatedButton(
-
       onPressed: () {
-        getPlaceDirectionDetails(widget.predictedPlaces!.placeId, context);
+        setDropOffLocation(context);
       },
-
       style: ElevatedButton.styleFrom(
         backgroundColor: darkTheme ? Colors.black : Colors.white,
+        padding: EdgeInsets.zero,
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            Icon(
+              Icons.add_location,
+              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+              size: 28,
+            ),
+            SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    mainText,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                    ),
+                  ),
+                  if (secondaryText.isNotEmpty) ...[
+                    SizedBox(height: 3),
+                    Text(
+                      secondaryText,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

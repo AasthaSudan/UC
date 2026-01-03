@@ -1,13 +1,17 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'global.dart';
 import 'user_model.dart';
 import 'directions.dart';
 import 'app_info.dart';
+import 'directions_details_info.dart';
+import 'openroute_service.dart';
 
 class AssistantMethods {
+  static final OpenRouteService _routeService = OpenRouteService();
 
   static Future<void> readCurrentOnlineUserInfo() async {
     currentUser = firebaseAuth.currentUser;
@@ -53,23 +57,60 @@ class AssistantMethods {
     return humanReadableAddress;
   }
 
-  static Future<DirectionsDetailsInfo> obtainOriginToDestinationDetails(LatLng originPosition, LatLng destinationPosition) async {
-    String url = "https://maps.googleapis.com/maps/api/directions/json?origin=${originPosition.latitude},${originPosition.longitude}&destination=${destinationPosition.latitude},${destinationPosition.longitude}&key=$mapKey";
-    var responseDirectionApi = await RequestAssistant.receiveRequest(url);
+  // Get directions using OpenRouteService (FREE - No API key needed for basic usage)
+  static Future<DirectionsDetailsInfo?> obtainOriginToDestinationDirectionDetails(
+      LatLng originPosition,
+      LatLng destinationPosition
+      ) async {
+    try {
+      print("Fetching route from OpenRouteService...");
+      print("Origin: ${originPosition.latitude}, ${originPosition.longitude}");
+      print("Destination: ${destinationPosition.latitude}, ${destinationPosition.longitude}");
 
-    // if(responseDirectionApi == "Error Occurred. Failed. No Response."){
-    //   return null;
-    // )
+      var routeData = await _routeService.getRoute(originPosition, destinationPosition);
 
-    DirectionsDetailsInfo directionsDetailsInfo = DirectionsDetailsInfo();
-    directionsDetailsInfo.e_points = responseDirectionApi["routes"][0]["overview_polyline"]["points"];
-    directionsDetailsInfo.distance_text = responseDirectionApi["routes"][0]["legs"][0]["distance"]["text"];
-    directionsDetailsInfo.distance_value = responseDirectionApi["routes"][0]["legs"][0]["distance"]["value"];
-    directionsDetailsInfo.duration_text = responseDirectionApi["routes"][0]["legs"][0]["distance"]["text"];
-    directionsDetailsInfo.duration_value = responseDirectionApi["routes"][0]["legs"][0]["distance"]["value"];
+      if (routeData == null) {
+        print("No route data received from OpenRouteService");
+        return null;
+      }
 
+      print("Route data received successfully");
 
+      DirectionsDetailsInfo directionsDetailsInfo = DirectionsDetailsInfo();
 
+      // Extract route information
+      var route = routeData['routes'][0];
+      var summary = route['summary'];
+
+      // Distance in meters
+      double distanceInMeters = summary['distance'].toDouble();
+      double distanceInKm = distanceInMeters / 1000;
+      directionsDetailsInfo.distance_value = distanceInMeters.toInt();
+      directionsDetailsInfo.distance_text = "${distanceInKm.toStringAsFixed(2)} km";
+
+      print("Distance: ${directionsDetailsInfo.distance_text}");
+
+      // Duration in seconds
+      double durationInSeconds = summary['duration'].toDouble();
+      double durationInMinutes = durationInSeconds / 60;
+      directionsDetailsInfo.duration_value = durationInSeconds.toInt();
+      directionsDetailsInfo.duration_text = "${durationInMinutes.toStringAsFixed(0)} mins";
+
+      print("Duration: ${directionsDetailsInfo.duration_text}");
+
+      // Get encoded polyline
+      directionsDetailsInfo.e_points = route['geometry'];
+      print("Polyline encoded string length: ${directionsDetailsInfo.e_points?.length}");
+
+      return directionsDetailsInfo;
+    } catch (e) {
+      print("Error getting directions: $e");
+      return null;
+    }
   }
-    )
+
+  // Search places using Nominatim (OpenStreetMap - FREE)
+  static Future<List<Map<String, dynamic>>> searchPlaces(String query) async {
+    return await _routeService.searchPlaces(query);
+  }
 }
