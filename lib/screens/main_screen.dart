@@ -5,11 +5,14 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:geocoding/geocoding.dart';
-import 'app_info.dart';
-import 'directions.dart';
-import 'assistant_methods.dart';
+import '../info/app_info.dart';
+import '../models/directions.dart';
+import '../assistants/assistant_methods.dart';
 import 'search_places_screen.dart';
-import 'openroute_service.dart';
+import '../widgets/openroute_service.dart';
+import 'profile_screen.dart';
+import 'precise_pickup_location.dart';
+import '../global/global.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -316,6 +319,128 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  Widget _buildDrawer(bool darkTheme) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          // Drawer Header
+          UserAccountsDrawerHeader(
+            decoration: BoxDecoration(
+              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+            ),
+            accountName: Text(
+              userModelCurrentInfo?.name ?? userName,
+              style: TextStyle(
+                color: darkTheme ? Colors.black : Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            accountEmail: Text(
+              userModelCurrentInfo?.email ?? userEmail,
+              style: TextStyle(
+                color: darkTheme ? Colors.black87 : Colors.white70,
+              ),
+            ),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: darkTheme ? Colors.black : Colors.white,
+              child: Icon(
+                Icons.person,
+                size: 50,
+                color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+              ),
+            ),
+          ),
+
+          // Menu Items
+          ListTile(
+            leading: Icon(
+              Icons.person,
+              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+            ),
+            title: Text("Profile"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfileScreen()),
+              );
+            },
+          ),
+
+          ListTile(
+            leading: Icon(
+              Icons.history,
+              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+            ),
+            title: Text("Ride History"),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Ride History - Coming Soon")),
+              );
+            },
+          ),
+
+          ListTile(
+            leading: Icon(
+              Icons.payment,
+              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+            ),
+            title: Text("Payment Methods"),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Payment Methods - Coming Soon")),
+              );
+            },
+          ),
+
+          ListTile(
+            leading: Icon(
+              Icons.help_outline,
+              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+            ),
+            title: Text("Help & Support"),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Help & Support - Coming Soon")),
+              );
+            },
+          ),
+
+          Divider(),
+
+          ListTile(
+            leading: Icon(
+              Icons.info_outline,
+              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+            ),
+            title: Text("About"),
+            onTap: () {
+              Navigator.pop(context);
+              showAboutDialog(
+                context: context,
+                applicationName: "Trippo",
+                applicationVersion: "1.0.0",
+                applicationIcon: Icon(
+                  Icons.local_taxi,
+                  size: 50,
+                  color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                ),
+                children: [
+                  Text("A ride-sharing app for India"),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool darkTheme = Theme.of(context).brightness == Brightness.dark;
@@ -326,6 +451,7 @@ class _MainScreenState extends State<MainScreen> {
       },
       child: Scaffold(
         key: scaffoldState,
+        drawer: _buildDrawer(darkTheme),
         body: Stack(
           children: [
             FlutterMap(
@@ -362,59 +488,22 @@ class _MainScreenState extends State<MainScreen> {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.project_1',
                 ),
-
-                if (polylinePoints.isNotEmpty)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: polylinePoints,
-                        strokeWidth: 6.0,
-                        color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                        borderStrokeWidth: 2.0,
-                        borderColor: darkTheme ? Colors.amber.shade900 : Colors.blue.shade900,
-                      ),
-                    ],
-                  ),
-
-                if (circles.isNotEmpty)
-                  CircleLayer(circles: circles),
-
-                if (markers.isNotEmpty)
-                  MarkerLayer(markers: markers),
               ],
             ),
 
-            Align(
-              alignment: Alignment.center,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 35.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                      size: 45,
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        "Move map to set pickup",
-                        style: TextStyle(
-                          color: darkTheme ? Colors.black : Colors.white,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+            // Drawer Icon Button
+            Positioned(
+              top: 30,
+              left: 10,
+              child: IconButton(
+                icon: Icon(Icons.menu),
+                onPressed: () {
+                  scaffoldState.currentState?.openDrawer(); // Open drawer
+                },
               ),
             ),
 
+            // Your existing UI here
             Positioned(
               bottom: 0,
               left: 0,
@@ -432,6 +521,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                       child: Column(
                         children: [
+                          // "From" and "To" pickup/drop locations UI
                           Container(
                             decoration: BoxDecoration(
                               color: darkTheme ? Colors.grey.shade900 : Colors.grey.shade100,
@@ -577,69 +667,67 @@ class _MainScreenState extends State<MainScreen> {
                               ],
                             ),
                           ),
+
+                          SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PrecisePickUpScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  "Change Pick up",
+                                  style: TextStyle(
+                                    color: darkTheme ? Colors.black : Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                                  textStyle: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(width: 10),
+
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PrecisePickUpScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  "Request a ride",
+                                  style: TextStyle(
+                                    color: darkTheme ? Colors.black : Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                                  textStyle: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-
-            Positioned(
-              right: 20,
-              bottom: 350,
-              child: Column(
-                children: [
-                  FloatingActionButton(
-                    heroTag: "showIndia",
-                    mini: true,
-                    onPressed: () {
-                      mapController.fitCamera(
-                        CameraFit.bounds(
-                          bounds: _indiaBounds,
-                          padding: EdgeInsets.all(50),
-                        ),
-                      );
-                    },
-                    backgroundColor: Colors.orange,
-                    child: Icon(
-                      Icons.map,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  FloatingActionButton(
-                    heroTag: "myLocation",
-                    onPressed: locateUserPosition,
-                    backgroundColor: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                    child: Icon(
-                      Icons.my_location,
-                      color: darkTheme ? Colors.black : Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  FloatingActionButton(
-                    heroTag: "setPickup",
-                    onPressed: () async {
-                      if (pickLocation != null) {
-                        await getAddressFromLatLng();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Pickup location updated!"),
-                            duration: Duration(seconds: 2),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                    },
-                    backgroundColor: Colors.green,
-                    child: Icon(
-                      Icons.check,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
               ),
             ),
           ],

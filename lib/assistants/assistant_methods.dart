@@ -3,12 +3,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'global.dart';
-import 'user_model.dart';
-import 'directions.dart';
-import 'app_info.dart';
-import 'directions_details_info.dart';
-import 'openroute_service.dart';
+import '../global/global.dart';
+import '../models/user_model.dart';
+import '../models/directions.dart';
+import '../info/app_info.dart';
+import '../info/directions_details_info.dart';
+import '../widgets/openroute_service.dart';
 
 class AssistantMethods {
   static final OpenRouteService _routeService = OpenRouteService();

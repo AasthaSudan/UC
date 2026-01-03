@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'main_screen.dart';
-import 'my_themes.dart';
-import 'register_screen.dart';
-import 'splash.dart';
-import 'search_places_screen.dart';
-import 'app_info.dart';
+import 'screens/main_screen.dart';
+import 'theme/my_themes.dart';
+import 'screens/register_screen.dart';
+import 'screens/splash.dart';
+import 'screens/search_places_screen.dart';
+import 'info/app_info.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => AppInfo(),
       child: MaterialApp(
-        title: 'Demo',
+        title: 'Trippo',
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,

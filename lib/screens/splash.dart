@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'main_screen.dart';
 import 'login_screen.dart';
-import 'assistant_methods.dart';
-import 'global.dart';
+import '../assistants/assistant_methods.dart';
+import '../global/global.dart';
 
 class SplashScreen extends StatefulWidget {
   @override

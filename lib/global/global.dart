@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'user_model.dart';
-import 'directions_details_info.dart';
+import '../models/user_model.dart';
+import '../info/directions_details_info.dart';
 
 final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 User? currentUser;

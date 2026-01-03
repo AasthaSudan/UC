@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
 import 'forget_password_screen.dart';
 import 'main_screen.dart';
-import 'global.dart';
+import '../global/global.dart';
+import '../assistants/assistant_methods.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'assistant_methods.dart';
-import 'place_prediction_tile.dart';
-import 'app_info.dart';
+import '../assistants/assistant_methods.dart';
+import '../widgets/place_prediction_tile.dart';
+import '../info/app_info.dart';
 
 class SearchPlacesScreen extends StatefulWidget {
   const SearchPlacesScreen({super.key});
