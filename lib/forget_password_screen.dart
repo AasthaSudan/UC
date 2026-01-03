@@ -81,7 +81,6 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        // EMAIL FIELD
                         _inputField(
                           darkTheme: darkTheme,
                           controller: emailController,
@@ -100,7 +99,6 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
 
                         const SizedBox(height: 30),
 
-                        // SEND BUTTON
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor:

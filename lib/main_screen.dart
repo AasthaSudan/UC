@@ -61,7 +61,6 @@ class _MainScreenState extends State<MainScreen> {
       _locationPermission = await Geolocator.requestPermission();
     }
 
-    // Automatically locate user on start
     await locateUserPosition();
   }
 
@@ -71,7 +70,6 @@ class _MainScreenState extends State<MainScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // Check if location is within India bounds
       bool isInIndia = cPosition.latitude >= _southWestBound.latitude &&
           cPosition.latitude <= _northEastBound.latitude &&
           cPosition.longitude >= _southWestBound.longitude &&
@@ -79,13 +77,11 @@ class _MainScreenState extends State<MainScreen> {
 
       if (!isInIndia) {
         print("GPS location is outside India. Using default location (New Delhi).");
-        // Use default India location
         setState(() {
           pickLocation = _initialLocation;
         });
         mapController.move(_initialLocation, 12.0);
 
-        // Get address for New Delhi
         Position newDelhiPosition = Position(
           latitude: _initialLocation.latitude,
           longitude: _initialLocation.longitude,
@@ -114,16 +110,14 @@ class _MainScreenState extends State<MainScreen> {
         return;
       }
 
-      // Location is in India
       setState(() {
         userCurrentPosition = cPosition;
         pickLocation = LatLng(cPosition.latitude, cPosition.longitude);
       });
 
-      // Animate to user location with appropriate zoom
       mapController.move(
         LatLng(cPosition.latitude, cPosition.longitude),
-        15.0, // Street level zoom
+        15.0,
       );
 
       String humanReadableAddress = await AssistantMethods.searchAddressForGeographicCoordinates(
@@ -133,7 +127,6 @@ class _MainScreenState extends State<MainScreen> {
       print("This is our address = $humanReadableAddress");
     } catch (e) {
       print("Error getting location: $e");
-      // If GPS fails, show default India location
       setState(() {
         pickLocation = _initialLocation;
       });
@@ -196,7 +189,6 @@ class _MainScreenState extends State<MainScreen> {
     print("Origin: ${originLatLng.latitude}, ${originLatLng.longitude}");
     print("Destination: ${destinationLatLng.latitude}, ${destinationLatLng.longitude}");
 
-    // Show loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -206,18 +198,16 @@ class _MainScreenState extends State<MainScreen> {
     );
 
     try {
-      // Get route from OpenRouteService
       var directionDetails = await AssistantMethods.obtainOriginToDestinationDirectionDetails(
         originLatLng,
         destinationLatLng,
       );
 
-      Navigator.pop(context); // Close loading dialog
+      Navigator.pop(context);
 
       if (directionDetails != null && directionDetails.e_points != null) {
         print("Got direction details, decoding polyline...");
 
-        // Decode polyline
         var routePoints = OpenRouteService().decodePolyline(directionDetails.e_points!);
 
         print("Decoded ${routePoints.length} route points");
@@ -225,7 +215,6 @@ class _MainScreenState extends State<MainScreen> {
         setState(() {
           polylinePoints = routePoints;
 
-          // Add markers for origin and destination
           markers = [
             Marker(
               point: originLatLng,
@@ -257,7 +246,6 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ];
 
-          // Add circles around markers
           circles = [
             CircleMarker(
               point: originLatLng,
@@ -278,7 +266,6 @@ class _MainScreenState extends State<MainScreen> {
           ];
         });
 
-        // Fit bounds to show entire route
         if (routePoints.isNotEmpty) {
           double minLat = routePoints.map((p) => p.latitude).reduce((a, b) => a < b ? a : b);
           double maxLat = routePoints.map((p) => p.latitude).reduce((a, b) => a > b ? a : b);
@@ -298,7 +285,6 @@ class _MainScreenState extends State<MainScreen> {
           );
         }
 
-        // Show route info
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -319,7 +305,7 @@ class _MainScreenState extends State<MainScreen> {
         );
       }
     } catch (e) {
-      Navigator.pop(context); // Close loading dialog
+      Navigator.pop(context);
       print("Error drawing route: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -342,15 +328,13 @@ class _MainScreenState extends State<MainScreen> {
         key: scaffoldState,
         body: Stack(
           children: [
-            // Flutter Map
             FlutterMap(
               mapController: mapController,
               options: MapOptions(
                 initialCenter: pickLocation ?? _initialLocation,
-                initialZoom: 5.0, // Zoom level to show whole India
-                minZoom: 4.0, // Minimum zoom (can't zoom out too much)
-                maxZoom: 18.0, // Maximum zoom (street level)
-                // Restrict map to India boundaries
+                initialZoom: 5.0,
+                minZoom: 4.0,
+                maxZoom: 18.0,
                 cameraConstraint: CameraConstraint.contain(
                   bounds: _indiaBounds,
                 ),
@@ -361,13 +345,11 @@ class _MainScreenState extends State<MainScreen> {
                   getAddressFromLatLng();
                 },
                 onPositionChanged: (position, hasGesture) {
-                  // Update pickup location when map is moved (debounced)
                   if (hasGesture && position.center != null) {
                     setState(() {
                       pickLocation = position.center;
                     });
 
-                    // Debounce the address lookup
                     if (_debounce?.isActive ?? false) _debounce!.cancel();
                     _debounce = Timer(const Duration(milliseconds: 1000), () {
                       getAddressFromLatLng();
@@ -376,13 +358,11 @@ class _MainScreenState extends State<MainScreen> {
                 },
               ),
               children: [
-                // Tile Layer (OpenStreetMap)
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.project_1',
                 ),
 
-                // Polyline Layer (ROUTE)
                 if (polylinePoints.isNotEmpty)
                   PolylineLayer(
                     polylines: [
@@ -396,17 +376,14 @@ class _MainScreenState extends State<MainScreen> {
                     ],
                   ),
 
-                // Circle Layer
                 if (circles.isNotEmpty)
                   CircleLayer(circles: circles),
 
-                // Marker Layer
                 if (markers.isNotEmpty)
                   MarkerLayer(markers: markers),
               ],
             ),
 
-            // Center Pin Image (Draggable pickup location indicator)
             Align(
               alignment: Alignment.center,
               child: Padding(
@@ -438,7 +415,6 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
 
-            // Bottom Container with Pickup/Dropoff
             Positioned(
               bottom: 0,
               left: 0,
@@ -463,12 +439,10 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                             child: Column(
                               children: [
-                                // From Location
                                 Padding(
                                   padding: EdgeInsets.all(5),
                                   child: GestureDetector(
                                     onTap: () {
-                                      // Allow user to change pickup location
                                       showDialog(
                                         context: context,
                                         builder: (context) => AlertDialog(
@@ -543,7 +517,6 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                                 SizedBox(height: 5),
 
-                                // To Location
                                 Padding(
                                   padding: EdgeInsets.all(5),
                                   child: GestureDetector(
@@ -612,13 +585,11 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
 
-            // Control Buttons
             Positioned(
               right: 20,
               bottom: 350,
               child: Column(
                 children: [
-                  // Show All India Button
                   FloatingActionButton(
                     heroTag: "showIndia",
                     mini: true,
@@ -638,7 +609,6 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
                   SizedBox(height: 10),
-                  // My Location Button
                   FloatingActionButton(
                     heroTag: "myLocation",
                     onPressed: locateUserPosition,
@@ -649,12 +619,10 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
                   SizedBox(height: 10),
-                  // Set Pickup Location Button
                   FloatingActionButton(
                     heroTag: "setPickup",
                     onPressed: () async {
                       if (pickLocation != null) {
-                        // Update pickup location to current map center
                         await getAddressFromLatLng();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

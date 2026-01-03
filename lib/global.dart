@@ -6,13 +6,10 @@ final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 User? currentUser;
 UserModel? userModelCurrentInfo;
 
-// User info
 String userName = "";
 String userEmail = "";
 String userPhone = "";
 
-// Drop off location
 String userDropOffLocation = "";
 
-// Trip details
 DirectionsDetailsInfo? tripDirectionDetailsInfo;

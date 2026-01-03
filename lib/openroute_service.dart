@@ -2,17 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
 
 class OpenRouteService {
-  // IMPORTANT: Get your FREE API key from https://openrouteservice.org/dev/#/signup
-  // Replace this with your own API key (2000 free requests/day)
-  static const String apiKey = "YOUR_API_KEY_HERE"; // <-- PUT YOUR KEY HERE
+
+  static const String apiKey = "YOUR_API_KEY_HERE";
   static const String baseUrl = "https://api.openrouteservice.org";
 
   final Dio _dio = Dio();
 
-  // Get route between two points using OSRM (NO API KEY NEEDED!)
   Future<Map<String, dynamic>?> getRoute(LatLng start, LatLng end) async {
     try {
-      // Use OSRM public API (no key required)
       final response = await _dio.get(
         'https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}',
         queryParameters: {
@@ -22,7 +19,6 @@ class OpenRouteService {
       );
 
       if (response.statusCode == 200) {
-        // Convert OSRM response to OpenRouteService format
         var data = response.data;
         if (data['code'] == 'Ok' && data['routes'].isNotEmpty) {
           var route = data['routes'][0];
@@ -41,13 +37,11 @@ class OpenRouteService {
       }
     } catch (e) {
       print('Error getting route from OSRM: $e');
-      // Fallback to OpenRouteService if OSRM fails
       return await _getRouteFromOpenRouteService(start, end);
     }
     return null;
   }
 
-  // Backup method using OpenRouteService (requires API key)
   Future<Map<String, dynamic>?> _getRouteFromOpenRouteService(LatLng start, LatLng end) async {
     try {
       final response = await _dio.post(
@@ -75,7 +69,6 @@ class OpenRouteService {
     return null;
   }
 
-  // Search for places using Nominatim (OpenStreetMap)
   Future<List<Map<String, dynamic>>> searchPlaces(String query) async {
     try {
       final response = await _dio.get(
@@ -85,7 +78,7 @@ class OpenRouteService {
           'format': 'json',
           'addressdetails': '1',
           'limit': '10',
-          'countrycodes': 'in', // India only
+          'countrycodes': 'in',
         },
         options: Options(
           headers: {
@@ -103,7 +96,6 @@ class OpenRouteService {
     return [];
   }
 
-  // Get place details by coordinates
   Future<Map<String, dynamic>?> reverseGeocode(LatLng location) async {
     try {
       final response = await _dio.get(
@@ -129,7 +121,6 @@ class OpenRouteService {
     return null;
   }
 
-  // Decode polyline from OpenRouteService (uses Google's encoding format)
   List<LatLng> decodePolyline(String encoded) {
     List<LatLng> points = [];
     int index = 0;
@@ -142,7 +133,6 @@ class OpenRouteService {
       int shift = 0;
       int result = 0;
 
-      // Decode latitude
       do {
         b = encoded.codeUnitAt(index++) - 63;
         result |= (b & 0x1f) << shift;
@@ -154,7 +144,6 @@ class OpenRouteService {
       shift = 0;
       result = 0;
 
-      // Decode longitude
       do {
         b = encoded.codeUnitAt(index++) - 63;
         result |= (b & 0x1f) << shift;

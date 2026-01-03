@@ -16,7 +16,6 @@ class PlacePredictionTileDesign extends StatefulWidget {
 class _PlacePredictionTileDesignState extends State<PlacePredictionTileDesign> {
 
   void setDropOffLocation(BuildContext context) {
-    // Extract place information from Nominatim result
     String placeName = widget.predictedPlace['display_name'] ?? '';
     double lat = double.parse(widget.predictedPlace['lat'] ?? '0');
     double lon = double.parse(widget.predictedPlace['lon'] ?? '0');
@@ -41,7 +40,6 @@ class _PlacePredictionTileDesignState extends State<PlacePredictionTileDesign> {
   Widget build(BuildContext context) {
     bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
-    // Extract display name parts
     String displayName = widget.predictedPlace['display_name'] ?? '';
     List<String> parts = displayName.split(',');
     String mainText = parts.isNotEmpty ? parts[0] : displayName;

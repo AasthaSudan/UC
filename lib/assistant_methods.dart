@@ -57,7 +57,6 @@ class AssistantMethods {
     return humanReadableAddress;
   }
 
-  // Get directions using OpenRouteService (FREE - No API key needed for basic usage)
   static Future<DirectionsDetailsInfo?> obtainOriginToDestinationDirectionDetails(
       LatLng originPosition,
       LatLng destinationPosition
@@ -78,11 +77,9 @@ class AssistantMethods {
 
       DirectionsDetailsInfo directionsDetailsInfo = DirectionsDetailsInfo();
 
-      // Extract route information
       var route = routeData['routes'][0];
       var summary = route['summary'];
 
-      // Distance in meters
       double distanceInMeters = summary['distance'].toDouble();
       double distanceInKm = distanceInMeters / 1000;
       directionsDetailsInfo.distance_value = distanceInMeters.toInt();
@@ -90,7 +87,6 @@ class AssistantMethods {
 
       print("Distance: ${directionsDetailsInfo.distance_text}");
 
-      // Duration in seconds
       double durationInSeconds = summary['duration'].toDouble();
       double durationInMinutes = durationInSeconds / 60;
       directionsDetailsInfo.duration_value = durationInSeconds.toInt();
@@ -98,7 +94,6 @@ class AssistantMethods {
 
       print("Duration: ${directionsDetailsInfo.duration_text}");
 
-      // Get encoded polyline
       directionsDetailsInfo.e_points = route['geometry'];
       print("Polyline encoded string length: ${directionsDetailsInfo.e_points?.length}");
 
@@ -109,7 +104,6 @@ class AssistantMethods {
     }
   }
 
-  // Search places using Nominatim (OpenStreetMap - FREE)
   static Future<List<Map<String, dynamic>>> searchPlaces(String query) async {
     return await _routeService.searchPlaces(query);
   }
