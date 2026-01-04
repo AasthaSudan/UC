@@ -324,7 +324,6 @@ class _MainScreenState extends State<MainScreen> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // Drawer Header
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(
               color: darkTheme ? Colors.amber.shade400 : Colors.blue,
@@ -353,7 +352,6 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
 
-          // Menu Items
           ListTile(
             leading: Icon(
               Icons.person,
@@ -488,22 +486,39 @@ class _MainScreenState extends State<MainScreen> {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.project_1',
                 ),
+
+                if (polylinePoints.isNotEmpty)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: polylinePoints,
+                        strokeWidth: 5.0,
+                        color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                        borderStrokeWidth: 2.0,
+                        borderColor: darkTheme ? Colors.amber.shade700 : Colors.blue.shade700,
+                      ),
+                    ],
+                  ),
+
+                if (circles.isNotEmpty)
+                  CircleLayer(circles: circles),
+
+                if (markers.isNotEmpty)
+                  MarkerLayer(markers: markers),
               ],
             ),
 
-            // Drawer Icon Button
             Positioned(
               top: 30,
               left: 10,
               child: IconButton(
                 icon: Icon(Icons.menu),
                 onPressed: () {
-                  scaffoldState.currentState?.openDrawer(); // Open drawer
+                  scaffoldState.currentState?.openDrawer();
                 },
               ),
             ),
 
-            // Your existing UI here
             Positioned(
               bottom: 0,
               left: 0,
@@ -521,7 +536,6 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                       child: Column(
                         children: [
-                          // "From" and "To" pickup/drop locations UI
                           Container(
                             decoration: BoxDecoration(
                               color: darkTheme ? Colors.grey.shade900 : Colors.grey.shade100,
