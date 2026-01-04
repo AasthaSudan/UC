@@ -8,6 +8,7 @@ import 'screens/splash.dart';
 import 'screens/search_places_screen.dart';
 import 'info/app_info.dart';
 import 'firebase_options.dart';
+import 'screens/car_info_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +28,7 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,
-        home: SplashScreen(),
+        home: CarInfoScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );
