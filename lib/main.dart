@@ -9,6 +9,7 @@ import 'screens/search_places_screen.dart';
 import 'info/app_info.dart';
 import 'firebase_options.dart';
 import 'screens/car_info_screen.dart';
+import 'package:project_1/tab_pages/home_tab.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +29,7 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,
-        home: CarInfoScreen(),
+        home: HomeTab(),
         debugShowCheckedModeBanner: false,
       ),
     );

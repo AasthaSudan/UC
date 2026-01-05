@@ -1,7 +1,7 @@
 import 'dart:async';
-
+import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:project_int/models/driver_data.dart';
+import 'package:project_1/models/driver_data.dart';
 import '../models/user_model.dart';
 import '../info/directions_details_info.dart';
 

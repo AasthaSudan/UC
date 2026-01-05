@@ -437,6 +437,30 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
     );
+
+    initializeGeoFireListener() {
+      Geofire.initialize("availableDrivers");
+      Geofire.queryAtLocation(
+        userCurrentPosition!.latitude,
+        userCurrentPosition!.longitude,
+        10)!
+          .listen((map) {
+            print(map);
+
+        if (map != null) {
+          var callBack = map["callBack"];
+
+          switch (callBack) {
+            case Geofire.onKeyEntered:
+              ActiveNearbyAvailableDrivers activeNearbyAvailableDrivers =
+              ActiveNearbyAvailableDrivers();
+              activeNearbyAvailableDrivers.locationLatitude = map["latitude"];
+              activeNearbyAvailableDrivers.locationLongitude = map["longitude"];
+              activeNearbyAvailableDrivers.driverId = map["key"];
+              nearbyAvailableDriversList.add(activeNearbyAvailableDrivers);
+
+
+    }
   }
 
   @override
