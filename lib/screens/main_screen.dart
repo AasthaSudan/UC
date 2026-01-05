@@ -445,7 +445,7 @@ class _MainScreenState extends State<MainScreen> {
         userCurrentPosition!.longitude,
         10)!
           .listen((map) {
-            print(map);
+        print(map);
 
         if (map != null) {
           var callBack = map["callBack"];
@@ -457,11 +457,72 @@ class _MainScreenState extends State<MainScreen> {
               activeNearbyAvailableDrivers.locationLatitude = map["latitude"];
               activeNearbyAvailableDrivers.locationLongitude = map["longitude"];
               activeNearbyAvailableDrivers.driverId = map["key"];
-              nearbyAvailableDriversList.add(activeNearbyAvailableDrivers);
+              GeoFireAssistant.nearbyAvailableDriversList.add(
+                  activeNearbyAvailableDrivers);
+              if (activeNearbyDriverKeysLoaded == true) {
+                displayActiveDriversOnUsersMap();
+              }
+              break;
 
+            case Geofire.onKeyExited:
+              GeoFireAssistant.deleteOfflibeDrivers(map["key"]);
+              displayActiveDriversOnUsersMap();
+          }
+          break;
 
-    }
+        case Geofire.onKeyMoved:
+        ActiveNearbyAvailableDrivers activeNearbyAvailableDrivers =
+        ActiveNearbyAvailableDrivers();
+        activeNearbyAvailableDrivers.locationLatitude = map["latitude"];
+        activeNearbyAvailableDrivers.locationLongitude = map["longitude"];
+        activeNearbyAvailableDrivers.driverId = map["key"];
+        GeoFireAssistant.updateOfflibeDrivers(activeNearbyAvailableDrivers);
+        displayActiveDriversOnUsersMap();
+        break;
+
+        case Geofire.onGeoQueryReady:
+        activeNearbyDriverKeysLoaded = true;
+        displayActiveDriversOnUsersMap();
+        break;
+      }
+      }
+      setState(() {
+
+      });
+
+    });
   }
+
+  displayActiveDriversOnUsersMap() {
+    setState(() {
+      markersSet.clear();
+      circlesSet.clear();
+
+      Set<Marker> driversMarkerSet = Set<Marker>();
+      Set<Circle> driversCircleSet = Set<Circle>();
+
+      for (ActiveNearbyAvailableDrivers driver in GeoFireAssistant.nearbyAvailableDriversList) {
+        LatLng driverPosition = LatLng(driver.locationLatitude!, driver.locationLongitude!);
+
+        Marker marker=Marker(
+          markerId: MarkerId("driver${driver.driverId}"),
+          position: driverPosition,
+          icon: activeNearByIcon!,
+          rotation: 360,
+        );
+
+        driversMarkerSet.add(marker);
+      }
+
+      setState(() {
+        markersSet = driversMarkerSet;
+      });
+    });
+
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
