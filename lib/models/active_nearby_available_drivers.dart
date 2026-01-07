@@ -1,12 +1,11 @@
-cass ActiveNearbyAvailableDrivers{
+class ActiveNearbyAvailableDrivers{
   String? driverId;
   double? locationLatitude;
   double? locationLongitude;
 
   ActiveNearbyAvailableDrivers({
-  this.driverId,
-this.locationLatitude,
-this.locationLongitude,
-});
-
+    this.driverId,
+    this.locationLatitude,
+    this.locationLongitude,
+  });
 }

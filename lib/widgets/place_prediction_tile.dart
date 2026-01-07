@@ -30,10 +30,6 @@ class _PlacePredictionTileDesignState extends State<PlacePredictionTileDesign> {
 
     Provider.of<AppInfo>(context, listen: false).updateDropOffLocationAddress(directions);
 
-    setState(() {
-      userDropOffLocation = placeName;
-    });
-
     Navigator.pop(context, "obtainDirectionResponse");
   }
 

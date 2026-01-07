@@ -107,4 +107,13 @@ class AssistantMethods {
   static Future<List<Map<String, dynamic>>> searchPlaces(String query) async {
     return await _routeService.searchPlaces(query);
   }
+
+  static double calculateFareAmountFromOriginToDestination(DirectionsDetailsInfo directionDetailsInfo) {
+    double timeTraveledFareAmount = ((directionDetailsInfo.duration_value ?? 0) / 60) * 0.1;
+    double distanceTraveledFareAmount = ((directionDetailsInfo.distance_value ?? 0) / 1000) * 0.1;
+
+    double totalFareAmount = timeTraveledFareAmount + distanceTraveledFareAmount;
+
+    return double.parse(totalFareAmount.toStringAsFixed(1));
+  }
 }

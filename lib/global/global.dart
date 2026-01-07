@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/driver_data.dart';
 import '../models/user_model.dart';
@@ -21,6 +22,13 @@ String userName = "";
 String userEmail = "";
 String userPhone = "";
 
-String userDropOffLocation = "";
-
 DirectionsDetailsInfo? tripDirectionDetailsInfo;
+
+String driverCarDetails = "";
+String driverName = "";
+String driverPhone = "";
+
+double countRatingStars = 0.0;
+String titleStarsRating = "";
+
+DatabaseReference? referenceRideRequest;
