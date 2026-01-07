@@ -958,7 +958,6 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ),
                       SizedBox(height: 10),
-                      // FIXED: Using Expanded to prevent overflow
                       Row(
                         children: [
                           Expanded(
@@ -1043,273 +1042,275 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                              child: const Icon(
-                                Icons.star,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 15),
-                            Expanded(
-                              child: Text(
-                                Provider.of<AppInfo>(context, listen: false).userPickUpLocation != null
-                                    ? _truncateText(Provider.of<AppInfo>(context, listen: false).userPickUpLocation!.locationName ?? "Not Getting Address", 40)
-                                    : "Not Getting Address",
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 15),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.grey,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                              child: const Icon(
-                                Icons.star,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 15),
-                            Expanded(
-                              child: Text(
-                                Provider.of<AppInfo>(context, listen: false).userDropOffLocation != null
-                                    ? _truncateText(Provider.of<AppInfo>(context, listen: false).userDropOffLocation!.locationName ?? "Where to?", 40)
-                                    : "Where to?",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          "SUGGESTED RIDES",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedVehicleType = "Car";
-                                  });
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: selectedVehicleType == "Car"
-                                        ? (darkTheme ? Colors.amber.shade400 : Colors.blue)
-                                        : (darkTheme ? Colors.black54 : Colors.grey),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 10),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Image.asset(
-                                          "assets/images/img_4.png",
-                                          scale: 2,
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          "Car",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: selectedVehicleType == "Car"
-                                                ? (darkTheme ? Colors.black : Colors.white)
-                                                : (darkTheme ? Colors.white : Colors.black),
-                                          ),
-                                        ),
-                                        SizedBox(height: 2),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            tripDirectionDetailsInfo != null
-                                                ? "₹${((AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 2) * 107).toStringAsFixed(1)}"
-                                                : "null",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedVehicleType = "CNG";
-                                  });
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: selectedVehicleType == "CNG"
-                                        ? (darkTheme ? Colors.amber.shade400 : Colors.blue)
-                                        : (darkTheme ? Colors.black54 : Colors.grey),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 10),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Image.asset(
-                                          "assets/images/img_5.png",
-                                          scale: 2,
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          "CNG",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: selectedVehicleType == "CNG"
-                                                ? (darkTheme ? Colors.black : Colors.white)
-                                                : (darkTheme ? Colors.white : Colors.black),
-                                          ),
-                                        ),
-                                        SizedBox(height: 2),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            tripDirectionDetailsInfo != null
-                                                ? "₹${((AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 2) * 107).toStringAsFixed(1)}"
-                                                : "null",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedVehicleType = "Bike";
-                                  });
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: selectedVehicleType == "Bike"
-                                        ? (darkTheme ? Colors.amber.shade400 : Colors.blue)
-                                        : (darkTheme ? Colors.black54 : Colors.grey),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 10),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Image.asset(
-                                          "assets/images/img_6.png",
-                                          scale: 2,
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          "Bike",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: selectedVehicleType == "Bike"
-                                                ? (darkTheme ? Colors.black : Colors.white)
-                                                : (darkTheme ? Colors.white : Colors.black),
-                                          ),
-                                        ),
-                                        SizedBox(height: 2),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            tripDirectionDetailsInfo != null
-                                                ? "₹${((AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 2) * 107).toStringAsFixed(1)}"
-                                                : "null",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 20),
-                        GestureDetector(
-                          onTap: () {
-                            if (selectedVehicleType != "") {
-                              saveRideRequestInformation(selectedVehicleType);
-                            } else {
-                              Fluttertoast.showToast(
-                                msg: "Please select a vehicle type",
-                              );
-                            }
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(2),
                             ),
-                            child: Center(
-                              child: Text(
-                                "Request Ride",
-                                style: TextStyle(
-                                  color: darkTheme ? Colors.black : Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
+                            child: const Icon(
+                              Icons.star,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              Provider.of<AppInfo>(context, listen: false).userPickUpLocation != null
+                                  ? _truncateText(Provider.of<AppInfo>(context, listen: false).userPickUpLocation!.locationName ?? "Not Getting Address", 35)
+                                  : "Not Getting Address",
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: const Icon(
+                              Icons.star,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              Provider.of<AppInfo>(context, listen: false).userDropOffLocation != null
+                                  ? _truncateText(Provider.of<AppInfo>(context, listen: false).userDropOffLocation!.locationName ?? "Where to?", 35)
+                                  : "Where to?",
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      const Text(
+                        "SUGGESTED RIDES",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedVehicleType = "Car";
+                              });
+                            },
+                            child: Container(
+                              width: 110,
+                              decoration: BoxDecoration(
+                                color: selectedVehicleType == "Car"
+                                    ? (darkTheme ? Colors.amber.shade400 : Colors.blue)
+                                    : (darkTheme ? Colors.black54 : Colors.grey[100]),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Image.asset(
+                                      "assets/images/img_4.png",
+                                      scale: 2.5,
+                                    ),
+                                    SizedBox(height: 5),
+                                    Text(
+                                      "Car",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: selectedVehicleType == "Car"
+                                            ? (darkTheme ? Colors.black : Colors.white)
+                                            : (darkTheme ? Colors.white : Colors.black),
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      tripDirectionDetailsInfo != null
+                                          ? "₹${((AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 2) * 107).toStringAsFixed(0)}"
+                                          : "null",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                        color: Colors.grey,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
+
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedVehicleType = "CNG";
+                              });
+                            },
+                            child: Container(
+                              width: 110,
+                              decoration: BoxDecoration(
+                                color: selectedVehicleType == "CNG"
+                                    ? (darkTheme ? Colors.amber.shade400 : Colors.blue)
+                                    : (darkTheme ? Colors.black54 : Colors.grey[100]),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Image.asset(
+                                      "assets/images/img_5.png",
+                                      scale: 2.5,
+                                    ),
+                                    SizedBox(height: 5),
+                                    Text(
+                                      "CNG",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: selectedVehicleType == "CNG"
+                                            ? (darkTheme ? Colors.black : Colors.white)
+                                            : (darkTheme ? Colors.white : Colors.black),
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      tripDirectionDetailsInfo != null
+                                          ? "₹${((AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 1.5) * 107).toStringAsFixed(0)}"
+                                          : "null",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                        color: Colors.grey,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedVehicleType = "Bike";
+                              });
+                            },
+                            child: Container(
+                              width: 110,
+                              decoration: BoxDecoration(
+                                color: selectedVehicleType == "Bike"
+                                    ? (darkTheme ? Colors.amber.shade400 : Colors.blue)
+                                    : (darkTheme ? Colors.black54 : Colors.grey[100]),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Image.asset(
+                                      "assets/images/img_6.png",
+                                      scale: 2.5,
+                                    ),
+                                    SizedBox(height: 5),
+                                    Text(
+                                      "Bike",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: selectedVehicleType == "Bike"
+                                            ? (darkTheme ? Colors.black : Colors.white)
+                                            : (darkTheme ? Colors.white : Colors.black),
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      tripDirectionDetailsInfo != null
+                                          ? "₹${((AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 0.8) * 107).toStringAsFixed(0)}"
+                                          : "null",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                        color: Colors.grey,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      GestureDetector(
+                        onTap: () {
+                          if (selectedVehicleType != "") {
+                            saveRideRequestInformation(selectedVehicleType);
+                          } else {
+                            Fluttertoast.showToast(
+                              msg: "Please select a vehicle type",
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              "Request Ride",
+                              style: TextStyle(
+                                color: darkTheme ? Colors.black : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1321,7 +1322,6 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// PayFareAmountDialog Widget
 class PayFareAmountDialog extends StatefulWidget {
   final double fareAmount;
 
