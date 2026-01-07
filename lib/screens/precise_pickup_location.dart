@@ -205,7 +205,6 @@ class _PrecisePickUpScreenState extends State<PrecisePickUpScreen> {
             ],
           ),
 
-          // Center pin
           Align(
             alignment: Alignment.center,
             child: Padding(
@@ -218,7 +217,6 @@ class _PrecisePickUpScreenState extends State<PrecisePickUpScreen> {
             ),
           ),
 
-          // Address display at bottom
           Positioned(
             bottom: 0,
             left: 0,
@@ -306,7 +304,6 @@ class _PrecisePickUpScreenState extends State<PrecisePickUpScreen> {
             ),
           ),
 
-          // My location button
           Positioned(
             right: 20,
             bottom: 200,
