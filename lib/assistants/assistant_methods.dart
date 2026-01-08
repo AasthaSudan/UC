@@ -9,6 +9,8 @@ import '../models/directions.dart';
 import '../info/app_info.dart';
 import '../info/directions_details_info.dart';
 import '../widgets/openroute_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AssistantMethods {
   static final OpenRouteService _routeService = OpenRouteService();
@@ -115,5 +117,40 @@ class AssistantMethods {
     double totalFareAmount = timeTraveledFareAmount + distanceTraveledFareAmount;
 
     return double.parse(totalFareAmount.toStringAsFixed(1));
+  }
+
+  static sendNotificationToDriverNow(String token, String rideRequestId, context) async {
+    String destinationAddress = Provider.of<AppInfo>(context, listen: false).userDropOffLocation!.locationName!;
+
+    Map<String, String> headerNotification = {
+      'Content-Type': 'application/json',
+      'Authorization': 'key=YOUR_FCM_SERVER_KEY_HERE'
+    };
+
+    Map bodyNotification = {
+      'body': 'Destination Address: $destinationAddress.',
+      'title': 'New Ride Request'
+    };
+
+    Map dataMap = {
+      'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+      'id': '1',
+      'status': 'done',
+      'ride_request_id': rideRequestId
+    };
+
+    Map official = {
+      'notification': bodyNotification,
+      'priority': 'high',
+      'data': dataMap,
+      'to': token,
+    };
+
+    var response = await http.post(
+      Uri.parse('https://fcm.googleapis.com/fcm/send'),
+      headers: headerNotification,
+      body: jsonEncode(official),
+    );
+    return response;
   }
 }

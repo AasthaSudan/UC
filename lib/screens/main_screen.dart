@@ -64,8 +64,8 @@ class _MainScreenState extends State<MainScreen> {
   double assignedDriverInfoContainerHeight = 0;
   double suggestedRidesContainerHeight = 0;
   double bottomPaddingOfMap = 0;
+  double searchingForDriverContainerHeight=0;
 
-  // Helper function to safely truncate text
   String _truncateText(String text, int maxLength) {
     if (text.length <= maxLength) {
       return text;
@@ -168,6 +168,59 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     print("Searching for nearest $selectedVehicleType drivers...");
+
+    await retrieveOnlineDriversInformation(onlineNearByAvailableDriversList);
+
+    print("Driver List: " + driversList.toString());
+
+    for (int i = 0; i < driversList.length; i++) {
+      if (driversList[i]["car_details"] == selectedVehicleType) {
+        AssistantMethods.sendNotificationToDriverNow(
+            driversList[i]["token"],
+            referenceRideRequest!.key!,
+            context
+        );
+        break;
+      }
+    }
+
+    Fluttertoast.showToast(msg: "Notification sent successfully");
+
+    showSearchingForDriversContainer();
+
+    await FirebaseDatabase.instance
+        .ref()
+        .child("All Ride Requests")
+        .child(referenceRideRequest!.key!)
+        .child("driverId")
+        .onValue
+        .listen((eventRideRequestSnapshot) {
+      print("EventSnapshot: ${eventRideRequestSnapshot.snapshot.value}");
+      if (eventRideRequestSnapshot.snapshot.value != null) {
+        if (eventRideRequestSnapshot.snapshot.value != "waiting") {
+          showUIForDriverFound();
+        }
+      }
+    });
+  }
+
+  showUIForDriverFound() {
+    setState(() {
+      waitingResponsefromDriverContainerHeight = 0;
+      searchLocationContainerHeight = 0;
+      assignedDriverInfoContainerHeight = 220;
+      suggestedRidesContainerHeight = 0;
+      bottomPaddingOfMap = 220;
+    });
+  }
+
+  void showSearchingForDriversContainer() {
+    if (mounted) {
+      setState(() {
+        searchingForDriverContainerHeight = 220;
+        bottomPaddingOfMap = 220;
+      });
+    }
   }
 
   saveRideRequestInformation(String selectedVehicleType) {
@@ -429,6 +482,21 @@ class _MainScreenState extends State<MainScreen> {
       _isLoadingAddress = false;
     }
   }
+
+  retrieveOnlineDriversInformation(List<ActiveNearbyAvailableDrivers> onlineNearByAvailableDriversList) async {
+    driversList.clear();
+    DatabaseReference ref = FirebaseDatabase.instance.ref().child("Drivers");
+
+    for(int i=0; i<onlineNearByAvailableDriversList.length; i++) {
+      await ref.child(onlineNearByAvailableDriversList[i].driverId!).once().then((dataSnapshot) {
+        var driverKeyInfo=dataSnapshot.snapshot.value;
+
+        driversList.add(driverKeyInfo);
+        print("driver key info - " + driversList.toString());
+      });
+    }
+  }
+
 
   drawPolyLineFromOriginToDestination(bool darkTheme) async {
     var originPosition = Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
@@ -1004,7 +1072,7 @@ class _MainScreenState extends State<MainScreen> {
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 child: Text(
-                                  "Request a ride",
+                                  "Show Fare",
                                   style: TextStyle(
                                     color: darkTheme ? Colors.black : Colors.white,
                                   ),
