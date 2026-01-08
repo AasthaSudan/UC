@@ -497,7 +497,6 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-
   drawPolyLineFromOriginToDestination(bool darkTheme) async {
     var originPosition = Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
     var destinationPosition = Provider.of<AppInfo>(context, listen: false).userDropOffLocation;

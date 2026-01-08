@@ -55,7 +55,6 @@ class AssistantMethods {
     } catch (e) {
       print("Error getting address: $e");
     }
-
     return humanReadableAddress;
   }
 
