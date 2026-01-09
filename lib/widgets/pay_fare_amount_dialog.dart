@@ -19,11 +19,11 @@ class _PayFareAmountDialogState extends State<PayFareAmountDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(15),
       ),
       backgroundColor: Colors.transparent,
       child: Container(
-        margin: const EdgeInsets.all(6),
+        margin: const EdgeInsets.all(10),
         width: double.infinity,
         decoration: BoxDecoration(
           color: darkTheme ? Colors.black : Colors.white,
@@ -37,8 +37,8 @@ class _PayFareAmountDialogState extends State<PayFareAmountDialog> {
               "Fare Amount",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                fontSize: 50,
+                color: darkTheme ? Colors.amber.shade400 : Colors.white,
               ),
             ),
             const SizedBox(height: 20),
@@ -57,7 +57,9 @@ class _PayFareAmountDialogState extends State<PayFareAmountDialog> {
               child: Text(
                 "This is the total trip amount. Please pay it to the driver.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(
+                    color: Colors.grey,
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -71,7 +73,7 @@ class _PayFareAmountDialogState extends State<PayFareAmountDialog> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () {
-                  Navigator.pop(context, "cashPaid");
+                  Navigator.pop(context, "Cash Paid");
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
