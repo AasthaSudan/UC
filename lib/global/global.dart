@@ -19,6 +19,8 @@ DriverData onlineDriverData = DriverData();
 StreamSubscription<Position>? streamSubscriptionPosition;
 StreamSubscription<Position>? streamSubscriptionDriverLivePosition;
 
+AssetsAudioPlayer audioPlayer = AssetsAudioPlayer();
+
 String userName = "";
 String userEmail = "";
 String userPhone = "";

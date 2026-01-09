@@ -172,6 +172,19 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    checkIfLocationPermissionAllowed();
+    readCurrentDriverInfo();
+
+    PushNotificationSystem pushNotificationSystem = PushNotificationSystem();
+    pushNotificationSystem.initializeCloudMessaging(context);
+    pushNotificationSystem.generateAndGetToken();
+  }
+
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(

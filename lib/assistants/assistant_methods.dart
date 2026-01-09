@@ -152,4 +152,9 @@ class AssistantMethods {
     );
     return response;
   }
+
+  static pauseLiveLocationUpdates() {
+    streamSubscriptionPosition!.pause();
+    Geofire.removeLocation(firebaseAuth.currentUser!.uid);
+  }
 }
