@@ -17,7 +17,7 @@ import '../global/global.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../models/active_nearby_available_drivers.dart';
 import '../assistants/geofire_assistant.dart';
-
+import '../widgets/pay_fare_amount_dialog.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

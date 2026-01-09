@@ -6,6 +6,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_geofire/flutter_geofire.dart';
 import '../assistants/assistant_methods.dart';
 import '../global/global.dart';
+import '../notifications/push_notification_system.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -24,12 +25,12 @@ class _HomeTabState extends State<HomeTab> {
   Color buttonColor = Colors.red;
   bool isDriverActive = false;
   bool isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initialize();
-  }
+  //
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _initialize();
+  // }
 
   @override
   void dispose() {
@@ -178,9 +179,11 @@ class _HomeTabState extends State<HomeTab> {
     checkIfLocationPermissionAllowed();
     readCurrentDriverInfo();
 
-    PushNotificationSystem pushNotificationSystem = PushNotificationSystem();
-    pushNotificationSystem.initializeCloudMessaging(context);
-    pushNotificationSystem.generateAndGetToken();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PushNotificationSystem pushNotificationSystem = PushNotificationSystem();
+      pushNotificationSystem.initializeCloudMessaging(context);
+      pushNotificationSystem.generateAndGetToken();
+    });
   }
 
 

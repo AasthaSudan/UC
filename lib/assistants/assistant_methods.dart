@@ -155,6 +155,6 @@ class AssistantMethods {
 
   static pauseLiveLocationUpdates() {
     streamSubscriptionPosition!.pause();
-    Geofire.removeLocation(firebaseAuth.currentUser!.uid);
+    // Geofire.removeLocation(firebaseAuth.currentUser!.uid);
   }
 }

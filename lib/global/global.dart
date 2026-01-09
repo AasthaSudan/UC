@@ -6,6 +6,7 @@ import '../models/driver_data.dart';
 import '../models/user_model.dart';
 import '../info/directions_details_info.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:just_audio/just_audio.dart';
 
 final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
@@ -19,7 +20,7 @@ DriverData onlineDriverData = DriverData();
 StreamSubscription<Position>? streamSubscriptionPosition;
 StreamSubscription<Position>? streamSubscriptionDriverLivePosition;
 
-AssetsAudioPlayer audioPlayer = AssetsAudioPlayer();
+AudioPlayer audioPlayer = AudioPlayer();
 
 String userName = "";
 String userEmail = "";
