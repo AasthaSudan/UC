@@ -39,3 +39,38 @@ double countRatingStars = 0.0;
 String titleStarsRating = "";
 
 DatabaseReference? referenceRideRequest;
+
+Future<void> readCurrentUserInfo() async {
+  currentUser = firebaseAuth.currentUser;
+
+  if (currentUser == null) {
+    print("Error: No user logged in");
+    return;
+  }
+
+  try {
+    DatabaseReference userRef = FirebaseDatabase.instance
+        .ref()
+        .child("users")
+        .child(currentUser!.uid);
+
+    DataSnapshot snapshot = await userRef.get();
+
+    if (snapshot.exists && snapshot.value != null) {
+      userModelCurrentInfo = UserModel.fromSnapshot(snapshot);
+
+      userName = userModelCurrentInfo?.name ?? '';
+      userEmail = userModelCurrentInfo?.email ?? '';
+      userPhone = userModelCurrentInfo?.phone ?? '';
+
+      print("User data loaded successfully");
+      print("Name: ${userModelCurrentInfo?.name}");
+      print("Email: ${userModelCurrentInfo?.email}");
+      print("Phone: ${userModelCurrentInfo?.phone}");
+    } else {
+      print("Error: User information is null - No data found in database");
+    }
+  } catch (e) {
+    print("Error reading user info: $e");
+  }
+}

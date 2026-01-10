@@ -27,6 +27,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _confirmVisible = false;
 
   final _formKey = GlobalKey<FormState>();
+
   void _submit() async {
     if (!_formKey.currentState!.validate()) {
       Fluttertoast.showToast(msg: "Not all fields are valid");
@@ -52,6 +53,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         DatabaseReference userRef = FirebaseDatabase.instance.ref().child("users");
         await userRef.child(currentUser!.uid).set(userMap);
+
+        await readCurrentUserInfo();
 
         Fluttertoast.showToast(msg: "Successfully Registered");
         Navigator.pushReplacement(

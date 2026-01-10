@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,
-        home: PayFareAmountDialog(fareAmount: 0.0),
+        home: MainScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );

@@ -48,8 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool darkTheme =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),

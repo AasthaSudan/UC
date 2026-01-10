@@ -168,7 +168,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       ),
                       SizedBox(height: 20),
 
-                      // User Name with style
                       Text(
                         userModelCurrentInfo?.name ?? userName,
                         style: TextStyle(
@@ -180,7 +179,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       ),
                       SizedBox(height: 8),
 
-                      // User Email with icon
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -201,7 +199,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       ),
                       SizedBox(height: 10),
 
-                      // Member since badge
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
@@ -274,7 +271,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       ),
                       SizedBox(height: 15),
 
-                      // Profile Options
                       _buildProfileOption(
                         context,
                         icon: Icons.person_outline,
@@ -341,7 +337,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
                       SizedBox(height: 20),
 
-                      // Section Header
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -414,7 +409,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
                       SizedBox(height: 30),
 
-                      // Logout Button with gradient
                       Container(
                         width: double.infinity,
                         height: 55,

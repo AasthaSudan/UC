@@ -160,6 +160,16 @@ class _MainScreenState extends State<MainScreen> {
       return;
     }
 
+    if(referenceRideRequest == null) {
+      print("Error: referenceRideRequest is null");
+      Fluttertoast.showToast(
+        msg: "Error: Please try requesting a ride again.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+      );
+      return;
+    }
+
     if (mounted) {
       setState(() {
         waitingResponsefromDriverContainerHeight = 220;
@@ -175,11 +185,13 @@ class _MainScreenState extends State<MainScreen> {
 
     for (int i = 0; i < driversList.length; i++) {
       if (driversList[i]["car_details"] == selectedVehicleType) {
-        AssistantMethods.sendNotificationToDriverNow(
-            driversList[i]["token"],
-            referenceRideRequest!.key!,
-            context
-        );
+        if (referenceRideRequest?.key != null) {
+          AssistantMethods.sendNotificationToDriverNow(
+              driversList[i]["token"],
+              referenceRideRequest!.key!,
+              context
+          );
+        }
         break;
       }
     }
@@ -188,7 +200,7 @@ class _MainScreenState extends State<MainScreen> {
 
     showSearchingForDriversContainer();
 
-    await FirebaseDatabase.instance
+    FirebaseDatabase.instance
         .ref()
         .child("All Ride Requests")
         .child(referenceRideRequest!.key!)
@@ -224,18 +236,48 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   saveRideRequestInformation(String selectedVehicleType) {
-    referenceRideRequest = FirebaseDatabase.instance.ref().child("All Ride Requests").push();
+    if (userModelCurrentInfo == null) {
+      print("Error: User information is null");
+      Fluttertoast.showToast(
+        msg: "Error: User information not available. Please login again.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+      );
+      return;
+    }
+
+    if (userModelCurrentInfo!.name == null || userModelCurrentInfo!.phone == null) {
+      print("Error: User name or phone is null");
+      Fluttertoast.showToast(
+        msg: "Error: User profile incomplete. Please update your profile.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+      );
+      return;
+    }
 
     var originLocation = Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
     var destinationLocation = Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
 
+    if (originLocation == null || destinationLocation == null) {
+      print("Error: Origin or destination location is null");
+      Fluttertoast.showToast(
+        msg: "Please select both pickup and drop-off locations",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+      );
+      return;
+    }
+
+    referenceRideRequest = FirebaseDatabase.instance.ref().child("All Ride Requests").push();
+
     Map originLocationMap = {
-      "latitude": originLocation!.locationLatitude.toString(),
+      "latitude": originLocation.locationLatitude.toString(),
       "longitude": originLocation.locationLongitude.toString(),
     };
 
     Map destinationLocationMap = {
-      "latitude": destinationLocation!.locationLatitude.toString(),
+      "latitude": destinationLocation.locationLatitude.toString(),
       "longitude": destinationLocation.locationLongitude.toString(),
     };
 
@@ -243,10 +285,10 @@ class _MainScreenState extends State<MainScreen> {
       "origin": originLocationMap,
       "destination": destinationLocationMap,
       "time": DateTime.now().toString(),
-      "userName": userModelCurrentInfo!.name,
-      "userPhone": userModelCurrentInfo!.phone,
-      "originAddress": originLocation.locationName,
-      "destinationAddress": destinationLocation.locationName,
+      "userName": firebaseAuth.currentUser?.displayName ?? "User",
+      "userPhone": firebaseAuth.currentUser?.phoneNumber ?? "Unknown",
+      "originAddress": originLocation.locationName ?? "Unknown",
+      "destinationAddress": destinationLocation.locationName ?? "Unknown",
       "driverId": "waiting",
     };
 
@@ -1144,7 +1186,6 @@ class _MainScreenState extends State<MainScreen> {
                         ],
                       ),
                       const SizedBox(height: 10),
-
                       Row(
                         children: [
                           Container(
@@ -1176,7 +1217,6 @@ class _MainScreenState extends State<MainScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-
                       const Text(
                         "SUGGESTED RIDES",
                         style: TextStyle(
@@ -1185,7 +1225,6 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -1240,7 +1279,6 @@ class _MainScreenState extends State<MainScreen> {
                               ),
                             ),
                           ),
-
                           GestureDetector(
                             onTap: () {
                               setState(() {
@@ -1292,7 +1330,6 @@ class _MainScreenState extends State<MainScreen> {
                               ),
                             ),
                           ),
-
                           GestureDetector(
                             onTap: () {
                               setState(() {
@@ -1347,7 +1384,6 @@ class _MainScreenState extends State<MainScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-
                       GestureDetector(
                         onTap: () {
                           if (selectedVehicleType != "") {
@@ -1381,6 +1417,83 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
               ),
+            ),
+
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: searchingForDriverContainerHeight,
+                decoration: BoxDecoration(
+                  color: darkTheme ? Colors.black : Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+                  child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    LinearProgressIndicator(
+                      color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                    ),
+                    SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        "Please wait...",
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    GestureDetector(
+                      onTap: () {
+                        if (referenceRideRequest != null) {
+                          referenceRideRequest!.remove();
+                        }
+                        setState(() {
+                          searchingForDriverContainerHeight = 0;
+                          suggestedRidesContainerHeight = 0;
+                        });
+                      },
+                      child: Container(
+                        height: 50,
+                        width: 50,
+                        decoration: BoxDecoration(
+                          color: darkTheme ? Colors.black : Colors.white,
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(
+                            color: Colors.grey,
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(Icons.close, size: 25),
+                      ),
+                    ),
+                    SizedBox(height: 15),
+                    Container(
+                      width: double.infinity,
+                      child: Text(
+                        "Cancel",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             ),
           ],
         ),

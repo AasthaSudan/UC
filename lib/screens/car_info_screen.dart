@@ -17,7 +17,6 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
-  // Toggle for password visibility
   bool _passwordVisible = false;
   bool _confirmVisible = false;
 
@@ -33,7 +32,6 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
           children: [
             Column(
               children: [
-                // Background Image
                 Image.asset(
                   darkTheme ? 'assets/images/img_1.png' : 'assets/images/img_2.png',
                   fit: BoxFit.cover,
@@ -141,7 +139,6 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                           ),
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
-                              // After form validation, navigate to Main Screen
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Car Details Submitted')),
@@ -207,7 +204,6 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
     );
   }
 
-  // Helper widget for text input fields
   Widget _inputField({
     required bool darkTheme,
     required TextEditingController controller,
