@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,
-        home: RegisterScreen(),
+        home: MainScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );
