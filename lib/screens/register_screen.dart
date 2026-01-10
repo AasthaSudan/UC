@@ -229,9 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             minimumSize: const Size(double.infinity, 50),
                           ),
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {}
-                          },
+                          onPressed: _submit,
                           child: const Text(
                             "Register",
                             style: TextStyle(fontSize: 20),
