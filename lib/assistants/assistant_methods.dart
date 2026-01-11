@@ -114,8 +114,24 @@ class AssistantMethods {
     double distanceTraveledFareAmount = ((directionDetailsInfo.distance_value ?? 0) / 1000) * 0.1;
 
     double totalFareAmount = timeTraveledFareAmount + distanceTraveledFareAmount;
+    double localCurrencyAmount = totalFareAmount * 107;
 
-    return double.parse(totalFareAmount.toStringAsFixed(1));
+    if(driverVehicleType == "Bike") {
+      double resultFareAmount = ((localCurrencyAmount.truncate()) * 0.8);
+      resultFareAmount;
+    }
+
+    else if(driverVehicleType == "CNG") {
+      double resultFareAmount = ((localCurrencyAmount.truncate()) * 1.5);
+      resultFareAmount;
+    }
+
+    else {
+      double resultFareAmount = ((localCurrencyAmount.truncate()) * 2);
+      resultFareAmount;
+    }
+
+    return localCurrencyAmount.truncate().toDouble();
   }
 
   static sendNotificationToDriverNow(String token, String rideRequestId, context) async {
