@@ -12,6 +12,7 @@ import 'screens/car_info_screen.dart';
 import 'package:project_1/tab_pages/home_tab.dart';
 import '../widgets/pay_fare_amount_dialog.dart';
 import 'screens/login_screen.dart';
+import 'screens/new_ride_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,
-        home: MainScreen(),
+        home: NewRideScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );
