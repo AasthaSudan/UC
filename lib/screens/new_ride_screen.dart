@@ -18,12 +18,6 @@ class NewRideScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("New Ride")),
-      body: const Center(
-        child: Text(
-          "Ride in progress...",
-          style: TextStyle(fontSize: 18),
-        ),
-      ),
     );
   }
 }
