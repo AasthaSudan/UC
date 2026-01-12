@@ -286,7 +286,40 @@ endTripNow() {
   var tripDirectionDetails = await AssistantMethods.obtainOriginToDestinationDirectionDetails(
     widget.userRideRequestDetails!.originLatLng!,
   );
+
+  double totalFareAmount=AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetails);
+
+  FirebaseDatabase.instance.ref().child("All Ride Requests").child(widget.userRideRequestDetails!.rideRequestId!).child("fareAmount").set(totalFareAmount.toString());
+  FirebaseDatabase.instance.ref().child("All Ride Requests").child(widget.userRideRequestDetails!.rideRequestId!).child("status").set("ended");
+
+  Navigator.pop(context);
+
+  showDialog(
+    context: context,
+      builder: (BuildContext context) => FareAmountCollectionDialog(
+        totalFareAmount: totalFareAmount,
+      ),
+    );
+
+    saveFareAmountToDriverEarnings(totalFareAmount);
 }
+
+  saveFareAmountToDriverEarnings(double totalFareAmount) async {
+    FirebaseDatabase.instance.ref().child("Drivers").child(firebaseAuth.currentUser!.uid).child("earnings").once().then((snap) {
+      if(snap.snapshot.value != null) {
+        double oldEarnings = double.parse(snap.snapshot.value.toString());
+        double driverTotalEarnings = oldEarnings + totalFareAmount;
+
+        FirebaseDatabase.instance.ref().child("Drivers").child(
+            firebaseAuth.currentUser!.uid).child("earnings").set(
+            driverTotalEarnings.toStringAsFixed(2));
+      }
+      else {
+        FirebaseDatabase.instance.ref().child("Drivers").child(
+            firebaseAuth.currentUser!.uid).child("earnings").set(totalFareAmount.toStringAsFixed(2));
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
