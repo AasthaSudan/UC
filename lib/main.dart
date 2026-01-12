@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,
-        home: FareAmountCollectionDialog(),
+        home: MainScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );

@@ -109,30 +109,37 @@ class AssistantMethods {
     return await _routeService.searchPlaces(query);
   }
 
-  static double calculateFareAmountFromOriginToDestination(DirectionsDetailsInfo directionDetailsInfo) {
-    double timeTraveledFareAmount = ((directionDetailsInfo.duration_value ?? 0) / 60) * 0.1;
-    double distanceTraveledFareAmount = ((directionDetailsInfo.distance_value ?? 0) / 1000) * 0.1;
+  static double calculateFareAmountFromOriginToDestination(
+      DirectionsDetailsInfo directionDetailsInfo) {
 
-    double totalFareAmount = timeTraveledFareAmount + distanceTraveledFareAmount;
+    double timeTraveledFareAmount =
+        ((directionDetailsInfo.duration_value ?? 0) / 60) * 0.1;
+
+    double distanceTraveledFareAmount =
+        ((directionDetailsInfo.distance_value ?? 0) / 1000) * 0.1;
+
+    double totalFareAmount =
+        timeTraveledFareAmount + distanceTraveledFareAmount;
+
     double localCurrencyAmount = totalFareAmount * 107;
 
-    if(driverVehicleType == "Bike") {
-      double resultFareAmount = ((localCurrencyAmount.truncate()) * 0.8);
-      resultFareAmount;
-    }
+    String vehicleType = onlineDriverData.car_type ?? "Car";
 
-    else if(driverVehicleType == "CNG") {
-      double resultFareAmount = ((localCurrencyAmount.truncate()) * 1.5);
-      resultFareAmount;
-    }
+    double finalFareAmount;
 
+    if (vehicleType == "Bike") {
+      finalFareAmount = localCurrencyAmount * 0.8;
+    }
+    else if (vehicleType == "CNG") {
+      finalFareAmount = localCurrencyAmount * 1.5;
+    }
     else {
-      double resultFareAmount = ((localCurrencyAmount.truncate()) * 2);
-      resultFareAmount;
+      finalFareAmount = localCurrencyAmount * 2;
     }
 
-    return localCurrencyAmount.truncate().toDouble();
+    return finalFareAmount.truncate().toDouble();
   }
+
 
   static sendNotificationToDriverNow(String token, String rideRequestId, context) async {
     String destinationAddress = Provider.of<AppInfo>(context, listen: false).userDropOffLocation!.locationName!;
