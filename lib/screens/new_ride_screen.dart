@@ -522,10 +522,10 @@ endTripNow() {
                               fontWeight: FontWeight.bold,
                               ),
                             ),
+                          ),
 
                           );
 
-)
 
 
 

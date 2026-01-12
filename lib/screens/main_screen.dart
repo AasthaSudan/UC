@@ -18,6 +18,15 @@ import 'package:firebase_database/firebase_database.dart';
 import '../models/active_nearby_available_drivers.dart';
 import '../assistants/geofire_assistant.dart';
 import '../widgets/pay_fare_amount_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+Future<void> _makePhoneCall(String url) async {
+  if(await canLaunch(url)) {
+    await launch(url);
+  } else {
+    throw 'Could not launch $url';
+  }
+}
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -100,6 +109,8 @@ class _MainScreenState extends State<MainScreen> {
         driverCurrentPositionLatLng,
         originLatLng,
       );
+
+      tripDirectionDetailsInfo=directionDetailsInfo;
 
       if (directionDetailsInfo != null && mounted) {
         setState(() {
@@ -307,18 +318,26 @@ class _MainScreenState extends State<MainScreen> {
         }
       }
 
-      if ((eventSnap.snapshot.value as Map)["driver_name"] != null) {
+      if ((eventSnap.snapshot.value as Map)["driverName"] != null) {
         if (mounted) {
           setState(() {
-            driverName = (eventSnap.snapshot.value as Map)["driver_name"].toString();
+            driverName = (eventSnap.snapshot.value as Map)["driverName"].toString();
           });
         }
       }
 
-      if ((eventSnap.snapshot.value as Map)["driver_phone"] != null) {
+      if ((eventSnap.snapshot.value as Map)["driverName"] != null) {
         if (mounted) {
           setState(() {
-            driverPhone = (eventSnap.snapshot.value as Map)["driver_phone"].toString();
+            driverName = (eventSnap.snapshot.value as Map)["driverName"].toString();
+          });
+        }
+      }
+
+      if ((eventSnap.snapshot.value as Map)["driverRatings"] != null) {
+        if (mounted) {
+          setState(() {
+            driverRatings = (eventSnap.snapshot.value as Map)["driverRatings"].toString();
           });
         }
       }
@@ -1493,7 +1512,117 @@ class _MainScreenState extends State<MainScreen> {
                   ],
                 ),
               ),
+             ),
             ),
+
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: assignedDriverInfoContainerHeight,
+                decoration: BoxDecoration(
+                  color: darkTheme ? Colors.black : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    children: [
+                      Text(
+                        driverRideStatus,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+
+                      const SizedBox(height: 5),
+
+                      Divider(
+                        thickness: 1,
+                        color: darkTheme ? Colors.grey : Colors.grey[300],
+                      ),
+
+                      const SizedBox(height: 5),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: darkTheme
+                                      ? Colors.amber.shade400
+                                      : Colors.lightBlue,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.person,
+                                  color: darkTheme ? Colors.black : Colors.white,
+                                ),
+                              ),
+
+                              const SizedBox(width: 10),
+
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    driverName,
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  const Text(
+                                    "4.5 ⭐",
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Image.asset(
+                                "assets/images/img_7.png",
+                                scale: 3,
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                driverCarDetails,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          _makePhoneCall(driverPhone);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                          darkTheme ? Colors.amber.shade400 : Colors.blue,
+                        ),
+                        icon: Icon(
+                          Icons.phone,
+                          color: darkTheme ? Colors.black : Colors.white,
+                        ),
+                        label: Text(
+                          "Call Driver",
+                          style: TextStyle(
+                            color: darkTheme ? Colors.black : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ),
