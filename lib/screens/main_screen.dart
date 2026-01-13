@@ -20,9 +20,10 @@ import '../assistants/geofire_assistant.dart';
 import '../widgets/pay_fare_amount_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-Future<void> _makePhoneCall(String url) async {
-  if(await canLaunch(url)) {
-    await launch(url);
+Future<void> _makePhoneCall(String phoneNumber) async {
+  final Uri url = Uri(scheme: 'tel', path: phoneNumber);
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url);
   } else {
     throw 'Could not launch $url';
   }
@@ -73,7 +74,7 @@ class _MainScreenState extends State<MainScreen> {
   double assignedDriverInfoContainerHeight = 0;
   double suggestedRidesContainerHeight = 0;
   double bottomPaddingOfMap = 0;
-  double searchingForDriverContainerHeight=0;
+  double searchingForDriverContainerHeight = 0;
 
   String _truncateText(String text, int maxLength) {
     if (text.length <= maxLength) {
@@ -110,7 +111,7 @@ class _MainScreenState extends State<MainScreen> {
         originLatLng,
       );
 
-      tripDirectionDetailsInfo=directionDetailsInfo;
+      tripDirectionDetailsInfo = directionDetailsInfo;
 
       if (directionDetailsInfo != null && mounted) {
         setState(() {
@@ -120,7 +121,7 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  void updateReacingTimeToUserDropOffLocation(LatLng driverCurrentPositionLatLng) async {
+  void updateReachingTimeToUserDropOffLocation(LatLng driverCurrentPositionLatLng) async {
     if (userRideRequestStatus == "onTrip") {
       if (mounted) {
         setState(() {
@@ -171,7 +172,7 @@ class _MainScreenState extends State<MainScreen> {
       return;
     }
 
-    if(referenceRideRequest == null) {
+    if (referenceRideRequest == null) {
       print("Error: referenceRideRequest is null");
       Fluttertoast.showToast(
         msg: "Error: Please try requesting a ride again.",
@@ -227,14 +228,16 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  showUIForDriverFound() {
-    setState(() {
-      waitingResponsefromDriverContainerHeight = 0;
-      searchLocationContainerHeight = 0;
-      assignedDriverInfoContainerHeight = 220;
-      suggestedRidesContainerHeight = 0;
-      bottomPaddingOfMap = 220;
-    });
+  void showUIForDriverFound() {
+    if (mounted) {
+      setState(() {
+        waitingResponsefromDriverContainerHeight = 0;
+        searchLocationContainerHeight = 0;
+        assignedDriverInfoContainerHeight = 220;
+        suggestedRidesContainerHeight = 0;
+        bottomPaddingOfMap = 220;
+      });
+    }
   }
 
   void showSearchingForDriversContainer() {
@@ -246,7 +249,7 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  saveRideRequestInformation(String selectedVehicleType) {
+  void saveRideRequestInformation(String selectedVehicleType) {
     if (userModelCurrentInfo == null) {
       print("Error: User information is null");
       Fluttertoast.showToast(
@@ -326,10 +329,10 @@ class _MainScreenState extends State<MainScreen> {
         }
       }
 
-      if ((eventSnap.snapshot.value as Map)["driverName"] != null) {
+      if ((eventSnap.snapshot.value as Map)["driverPhone"] != null) {
         if (mounted) {
           setState(() {
-            driverName = (eventSnap.snapshot.value as Map)["driverName"].toString();
+            driverPhone = (eventSnap.snapshot.value as Map)["driverPhone"].toString();
           });
         }
       }
@@ -369,7 +372,7 @@ class _MainScreenState extends State<MainScreen> {
         }
 
         if (userRideRequestStatus == "onTrip") {
-          updateReacingTimeToUserDropOffLocation(driverCurrentPositionLatLng);
+          updateReachingTimeToUserDropOffLocation(driverCurrentPositionLatLng);
         }
 
         if (userRideRequestStatus == "ended") {
@@ -409,13 +412,15 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void showSuggestedRidesContainer() {
-    setState(() {
-      suggestedRidesContainerHeight = 400;
-      bottomPaddingOfMap = 400;
-    });
+    if (mounted) {
+      setState(() {
+        suggestedRidesContainerHeight = 400;
+        bottomPaddingOfMap = 400;
+      });
+    }
   }
 
-  checkIfLocationPermissionAllowed() async {
+  void checkIfLocationPermissionAllowed() async {
     _locationPermission = await Geolocator.requestPermission();
     if (_locationPermission == LocationPermission.denied) {
       _locationPermission = await Geolocator.requestPermission();
@@ -424,7 +429,7 @@ class _MainScreenState extends State<MainScreen> {
     await locateUserPosition();
   }
 
-  locateUserPosition() async {
+  Future<void> locateUserPosition() async {
     try {
       Position cPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -464,7 +469,7 @@ class _MainScreenState extends State<MainScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text("GPS outside India. Using New Delhi as default."),
               backgroundColor: Colors.orange,
               duration: Duration(seconds: 3),
@@ -502,7 +507,7 @@ class _MainScreenState extends State<MainScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text("Could not get GPS location. Using default."),
             backgroundColor: Colors.red,
           ),
@@ -511,7 +516,7 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  getAddressFromLatLng() async {
+  Future<void> getAddressFromLatLng() async {
     if (pickLocation == null || _isLoadingAddress) return;
 
     _isLoadingAddress = true;
@@ -544,13 +549,13 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  retrieveOnlineDriversInformation(List<ActiveNearbyAvailableDrivers> onlineNearByAvailableDriversList) async {
+  Future<void> retrieveOnlineDriversInformation(List<ActiveNearbyAvailableDrivers> onlineNearByAvailableDriversList) async {
     driversList.clear();
     DatabaseReference ref = FirebaseDatabase.instance.ref().child("Drivers");
 
-    for(int i=0; i<onlineNearByAvailableDriversList.length; i++) {
+    for (int i = 0; i < onlineNearByAvailableDriversList.length; i++) {
       await ref.child(onlineNearByAvailableDriversList[i].driverId!).once().then((dataSnapshot) {
-        var driverKeyInfo=dataSnapshot.snapshot.value;
+        var driverKeyInfo = dataSnapshot.snapshot.value;
 
         driversList.add(driverKeyInfo);
         print("driver key info - " + driversList.toString());
@@ -558,7 +563,7 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  drawPolyLineFromOriginToDestination(bool darkTheme) async {
+  Future<void> drawPolyLineFromOriginToDestination(bool darkTheme) async {
     var originPosition = Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
     var destinationPosition = Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
 
@@ -576,7 +581,7 @@ class _MainScreenState extends State<MainScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) => Center(
+      builder: (BuildContext context) => const Center(
         child: CircularProgressIndicator(),
       ),
     );
@@ -605,7 +610,7 @@ class _MainScreenState extends State<MainScreen> {
                 point: originLatLng,
                 width: 80,
                 height: 80,
-                child: Icon(
+                child: const Icon(
                   Icons.location_on,
                   color: Colors.green,
                   size: 45,
@@ -615,7 +620,7 @@ class _MainScreenState extends State<MainScreen> {
                 point: destinationLatLng,
                 width: 80,
                 height: 80,
-                child: Icon(
+                child: const Icon(
                   Icons.location_on,
                   color: Colors.red,
                   size: 45,
@@ -658,7 +663,7 @@ class _MainScreenState extends State<MainScreen> {
           mapController.fitCamera(
             CameraFit.bounds(
               bounds: bounds,
-              padding: EdgeInsets.all(80),
+              padding: const EdgeInsets.all(80),
             ),
           );
         }
@@ -668,9 +673,9 @@ class _MainScreenState extends State<MainScreen> {
             SnackBar(
               content: Text(
                 'Distance: ${directionDetails.distance_text} • Duration: ${directionDetails.duration_text}',
-                style: TextStyle(fontSize: 16),
+                style: const TextStyle(fontSize: 16),
               ),
-              duration: Duration(seconds: 5),
+              duration: const Duration(seconds: 5),
               backgroundColor: darkTheme ? Colors.amber.shade700 : Colors.blue,
             ),
           );
@@ -679,7 +684,7 @@ class _MainScreenState extends State<MainScreen> {
         print("No direction details received");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text('Could not find route'),
               backgroundColor: Colors.red,
             ),
@@ -737,12 +742,12 @@ class _MainScreenState extends State<MainScreen> {
               Icons.person,
               color: darkTheme ? Colors.amber.shade400 : Colors.blue,
             ),
-            title: Text("Profile"),
+            title: const Text("Profile"),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ProfileScreen()),
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
               );
             },
           ),
@@ -751,11 +756,11 @@ class _MainScreenState extends State<MainScreen> {
               Icons.history,
               color: darkTheme ? Colors.amber.shade400 : Colors.blue,
             ),
-            title: Text("Ride History"),
+            title: const Text("Ride History"),
             onTap: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Ride History - Coming Soon")),
+                const SnackBar(content: Text("Ride History - Coming Soon")),
               );
             },
           ),
@@ -764,11 +769,11 @@ class _MainScreenState extends State<MainScreen> {
               Icons.payment,
               color: darkTheme ? Colors.amber.shade400 : Colors.blue,
             ),
-            title: Text("Payment Methods"),
+            title: const Text("Payment Methods"),
             onTap: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Payment Methods - Coming Soon")),
+                const SnackBar(content: Text("Payment Methods - Coming Soon")),
               );
             },
           ),
@@ -777,21 +782,21 @@ class _MainScreenState extends State<MainScreen> {
               Icons.help_outline,
               color: darkTheme ? Colors.amber.shade400 : Colors.blue,
             ),
-            title: Text("Help & Support"),
+            title: const Text("Help & Support"),
             onTap: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Help & Support - Coming Soon")),
+                const SnackBar(content: Text("Help & Support - Coming Soon")),
               );
             },
           ),
-          Divider(),
+          const Divider(),
           ListTile(
             leading: Icon(
               Icons.info_outline,
               color: darkTheme ? Colors.amber.shade400 : Colors.blue,
             ),
-            title: Text("About"),
+            title: const Text("About"),
             onTap: () {
               Navigator.pop(context);
               showAboutDialog(
@@ -803,7 +808,7 @@ class _MainScreenState extends State<MainScreen> {
                   size: 50,
                   color: darkTheme ? Colors.amber.shade400 : Colors.blue,
                 ),
-                children: [
+                children: const [
                   Text("A ride-sharing app for India"),
                 ],
               );
@@ -823,77 +828,78 @@ class _MainScreenState extends State<MainScreen> {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        key: scaffoldState,
-        drawer: _buildDrawer(darkTheme),
-        body: Stack(
-          children: [
+          key: scaffoldState,
+          drawer: _buildDrawer(darkTheme),
+          body: Stack(
+            children: [
             FlutterMap(
-              mapController: mapController,
-              options: MapOptions(
-                initialCenter: pickLocation ?? _initialLocation,
-                initialZoom: 5.0,
-                minZoom: 4.0,
-                maxZoom: 18.0,
-                cameraConstraint: CameraConstraint.contain(
-                  bounds: _indiaBounds,
-                ),
-                onTap: (tapPosition, point) {
-                  setState(() {
-                    pickLocation = point;
-                  });
-                  getAddressFromLatLng();
-                },
-                onPositionChanged: (position, hasGesture) {
-                  if (hasGesture && position.center != null) {
-                    setState(() {
-                      pickLocation = position.center;
-                    });
-
-                    if (_debounce?.isActive ?? false) _debounce!.cancel();
-                    _debounce = Timer(const Duration(milliseconds: 1000), () {
-                      getAddressFromLatLng();
-                    });
-                  }
-                },
+            mapController: mapController,
+            options: MapOptions(
+              initialCenter: pickLocation ?? _initialLocation,
+              initialZoom: 5.0,
+              minZoom: 4.0,
+              maxZoom: 18.0,
+              cameraConstraint: CameraConstraint.contain(
+                bounds: _indiaBounds,
               ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.project_1',
-                ),
-                if (polylinePoints.isNotEmpty)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: polylinePoints,
-                        strokeWidth: 5.0,
-                        color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                        borderStrokeWidth: 2.0,
-                        borderColor: darkTheme ? Colors.amber.shade700 : Colors.blue.shade700,
-                      ),
-                    ],
+              onTap: (tapPosition, point) {
+                setState(() {
+                  pickLocation = point;
+                });
+                getAddressFromLatLng();
+              },
+              onPositionChanged: (position, hasGesture) {
+                if (hasGesture && position.center != null) {
+                  setState(() {
+                    pickLocation = position.center;
+                  });
+
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 1000), () {
+                    getAddressFromLatLng();
+                  });
+                }
+              },
+            ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.example.project_1',
                   ),
-                if (circles.isNotEmpty)
-                  CircleLayer(circles: circles),
-                if (markers.isNotEmpty)
-                  MarkerLayer(markers: markers),
+                if (polylinePoints.isNotEmpty)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: polylinePoints,
+                      strokeWidth: 5.0,
+                      color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                      borderStrokeWidth: 2.0,
+                      borderColor: darkTheme ? Colors.amber.shade700 : Colors.blue.shade700,
+                    ),
+                  ],
+                ),
+              if (circles.isNotEmpty)
+                CircleLayer(circles: circles),
+              if (markers.isNotEmpty)
+                MarkerLayer(markers: markers),
               ],
             ),
 
-            if (pickLocation != null && markers.isEmpty)
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Transform.translate(
-                    offset: Offset(0, -25),
-                    child: Icon(
-                      Icons.location_on,
-                      size: 50,
-                      color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+              if (pickLocation != null && markers.isEmpty)
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Transform.translate(
+                      offset: const Offset(0, -25),
+                      child: Icon(
+                        Icons.location_on,
+                        size: 50,
+                        color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                      ),
                     ),
                   ),
                 ),
-              ),
+
 
             Positioned(
               top: 30,
