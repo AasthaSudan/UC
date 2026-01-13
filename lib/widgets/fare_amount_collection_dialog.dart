@@ -86,7 +86,7 @@ class _FareAmountCollectionDialogState
                   ),
                 ),
                 onPressed: () {
-                  Navigator.pop(context); // close dialog first
+                  Navigator.pop(context);
 
                   Future.delayed(const Duration(seconds: 2), () {
                     Navigator.push(
