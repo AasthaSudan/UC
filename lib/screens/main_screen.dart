@@ -93,93 +93,127 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void startListeningToNearbyDrivers(LatLng userLocation, double radiusInKm) {
-    print("🔍 Starting to listen for drivers within ${radiusInKm}km of ${userLocation.latitude}, ${userLocation.longitude}");
-
-    // Clear existing list
-    GeoFireAssistant.activeNearbyAvailableDriversList.clear();
+    print("Starting to listen for drivers within ${radiusInKm}km of ${userLocation.latitude}, ${userLocation.longitude}");
 
     DatabaseReference driversRef = FirebaseDatabase.instance.ref().child("Drivers");
 
-    // Listen for new drivers
     driversRef.onValue.listen((event) {
       if (event.snapshot.value == null) {
-        print("⚠️ No drivers found in database");
+        print("No drivers found in database");
+        if (mounted) {
+          setState(() {
+            GeoFireAssistant.activeNearbyAvailableDriversList.clear();
+          });
+        }
         return;
       }
 
       final driversMap = event.snapshot.value as Map<dynamic, dynamic>;
-      print("📊 Found ${driversMap.length} total drivers in database");
+      print("Found ${driversMap.length} total drivers in database");
 
-      // Clear and rebuild the list
       GeoFireAssistant.activeNearbyAvailableDriversList.clear();
 
       driversMap.forEach((key, value) {
-        final driverData = value as Map<dynamic, dynamic>;
+        try {
+          final driverData = value as Map<dynamic, dynamic>;
 
-        // Check if driver has location data
-        if (driverData["latitude"] == null || driverData["longitude"] == null) {
-          print("⚠️ Driver $key has no location data");
-          return;
-        }
+          print("Checking driver $key:");
+          print("   - Has latitude: ${driverData.containsKey("latitude")}");
+          print("   - Has longitude: ${driverData.containsKey("longitude")}");
+          print("   - isAvailable value: ${driverData["isAvailable"]}");
+          print("   - isAvailable type: ${driverData["isAvailable"].runtimeType}");
 
-        double driverLat = double.parse(driverData["latitude"].toString());
-        double driverLng = double.parse(driverData["longitude"].toString());
-
-        // Calculate distance
-        final distance = Distance().as(
-          LengthUnit.Kilometer,
-          LatLng(driverLat, driverLng),
-          userLocation,
-        );
-
-        print("📍 Driver $key is ${distance.toStringAsFixed(2)}km away, Available: ${driverData["isAvailable"]}");
-
-        // Check if driver is within radius and available
-        if (distance <= radiusInKm) {
-          bool isAvailable = driverData["isAvailable"] == true ||
-              driverData["isAvailable"] == "true" ||
-              driverData["isAvailable"] == 1;
-
-          if (isAvailable) {
-            var carDetails = driverData['car_details'];
-            String carType = "Unknown";
-            String carModel = "Unknown";
-
-            if (carDetails != null) {
-              if (carDetails is Map) {
-                carType = carDetails['car_type']?.toString() ?? "Unknown";
-                carModel = carDetails['car_model']?.toString() ?? "Unknown";
-              } else if (carDetails is String) {
-                carType = carDetails;
-              }
-            }
-
-            GeoFireAssistant.activeNearbyAvailableDriversList.add(
-              ActiveNearbyAvailableDrivers(
-                driverId: key.toString(),
-                name: driverData['name']?.toString() ?? "Unknown",
-                phone: driverData['phone']?.toString() ?? "Unknown",
-                locationLatitude: driverLat,
-                locationLongitude: driverLng,
-                carModel: carModel,
-                carType: carType,
-              ),
-            );
-            print("✅ Driver added: $key ($carType) - ${distance.toStringAsFixed(2)}km away");
-          } else {
-            print("❌ Driver $key is not available");
+          if (!driverData.containsKey("latitude") || !driverData.containsKey("longitude")) {
+            print("Driver $key has no location data");
+            return;
           }
+
+          if (driverData["latitude"] == null || driverData["longitude"] == null) {
+            print("Driver $key has null location data");
+            return;
+          }
+
+          double driverLat;
+          double driverLng;
+
+          try {
+            driverLat = double.parse(driverData["latitude"].toString());
+            driverLng = double.parse(driverData["longitude"].toString());
+          } catch (e) {
+            print("Error parsing location for driver $key: $e");
+            return;
+          }
+
+          final distance = Distance().as(
+            LengthUnit.Kilometer,
+            LatLng(driverLat, driverLng),
+            userLocation,
+          );
+
+          print("Distance: ${distance.toStringAsFixed(2)}km");
+
+          if (distance > radiusInKm) {
+            print("Driver $key is too far (${distance.toStringAsFixed(2)}km > ${radiusInKm}km)");
+            return;
+          }
+
+          bool isAvailable = false;
+
+          if (driverData["isAvailable"] == true ||
+              driverData["isAvailable"] == "true" ||
+              driverData["isAvailable"] == 1 ||
+              driverData["isAvailable"] == "1") {
+            isAvailable = true;
+          }
+
+          print("arsed availability: $isAvailable");
+
+          if (!isAvailable) {
+            print("Driver $key is not available");
+            return;
+          }
+
+          var carDetails = driverData['car_details'];
+          String carType = "Unknown";
+          String carModel = "Unknown";
+
+          if (carDetails != null) {
+            if (carDetails is Map) {
+              carType = carDetails['car_type']?.toString() ?? "Unknown";
+              carModel = carDetails['car_model']?.toString() ?? "Unknown";
+              print("Car type: $carType, Model: $carModel");
+            } else if (carDetails is String) {
+              carType = carDetails;
+              print("Car type (string): $carType");
+            }
+          }
+
+          GeoFireAssistant.activeNearbyAvailableDriversList.add(
+            ActiveNearbyAvailableDrivers(
+              driverId: key.toString(),
+              name: driverData['name']?.toString() ?? "Unknown",
+              phone: driverData['phone']?.toString() ?? "Unknown",
+              locationLatitude: driverLat,
+              locationLongitude: driverLng,
+              carModel: carModel,
+              carType: carType,
+            ),
+          );
+
+          print("Driver added successfully!");
+
+        } catch (e) {
+          print("Error processing driver $key: $e");
         }
       });
 
-      print("✅ Total available drivers nearby: ${GeoFireAssistant.activeNearbyAvailableDriversList.length}");
+      print("Total available drivers nearby: ${GeoFireAssistant.activeNearbyAvailableDriversList.length}");
 
       if (mounted) {
         setState(() {});
       }
     });
   }
-
   void updateDriversLocationAtRealTime(LatLng driverCurrentPositionLatLng) async {
     if (userRideRequestStatus == "accepted") {
       if (mounted) {
@@ -303,7 +337,6 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
   void saveRideRequestInformation(String selectedVehicleType) async {
-    // 1️⃣ Validate user
     if (currentUser == null || userModelCurrentInfo == null) {
       Fluttertoast.showToast(
         msg: "Please login to request a ride",
@@ -324,7 +357,6 @@ class _MainScreenState extends State<MainScreen> {
       return;
     }
 
-    // 2️⃣ Validate locations
     var origin = Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
     var destination = Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
     if (origin == null || destination == null) {
@@ -336,8 +368,19 @@ class _MainScreenState extends State<MainScreen> {
       return;
     }
 
-    // ✅ Check if drivers are available BEFORE creating request
-    if (GeoFireAssistant.activeNearbyAvailableDriversList.isEmpty) {
+    showSearchingForDriversContainer();
+
+    print("Waiting for driver list to populate...");
+    await Future.delayed(Duration(seconds: 3));
+
+    int driverCount = GeoFireAssistant.activeNearbyAvailableDriversList.length;
+    print("Available drivers after wait: $driverCount");
+
+    if (driverCount == 0) {
+      setState(() {
+        searchingForDriverContainerHeight = 0;
+      });
+
       Fluttertoast.showToast(
         msg: "No drivers available nearby. Please try again later.",
         gravity: ToastGravity.CENTER,
@@ -346,13 +389,17 @@ class _MainScreenState extends State<MainScreen> {
       return;
     }
 
-    print("📱 Available drivers: ${GeoFireAssistant.activeNearbyAvailableDriversList.length}");
-
-    // 3️⃣ Create ride request in Firebase
     referenceRideRequest = FirebaseDatabase.instance.ref().child("All Ride Requests").push();
+
     Map rideData = {
-      "origin": {"latitude": origin.locationLatitude.toString(), "longitude": origin.locationLongitude.toString()},
-      "destination": {"latitude": destination.locationLatitude.toString(), "longitude": destination.locationLongitude.toString()},
+      "origin": {
+        "latitude": origin.locationLatitude.toString(),
+        "longitude": origin.locationLongitude.toString()
+      },
+      "destination": {
+        "latitude": destination.locationLatitude.toString(),
+        "longitude": destination.locationLongitude.toString()
+      },
       "time": DateTime.now().toString(),
       "userName": userModelCurrentInfo!.name,
       "userPhone": userModelCurrentInfo!.phone,
@@ -360,18 +407,21 @@ class _MainScreenState extends State<MainScreen> {
       "destinationAddress": destination.locationName ?? "Unknown",
       "driverId": "waiting",
       "status": "waiting",
+      "vehicleType": selectedVehicleType,
     };
 
     try {
       await referenceRideRequest!.set(rideData);
-      print("✅ Ride request created: ${referenceRideRequest!.key}");
+      print("Ride request created: ${referenceRideRequest!.key}");
     } catch (e) {
-      print("❌ Error creating ride request: $e");
+      print("Error creating ride request: $e");
+      setState(() {
+        searchingForDriverContainerHeight = 0;
+      });
       Fluttertoast.showToast(msg: "Failed to create ride request");
       return;
     }
 
-    // 4️⃣ Listen for ride updates in real-time
     tripRideRequestInfoStreamSubscription = referenceRideRequest!.onValue.listen((eventSnap) async {
       if (eventSnap.snapshot.value == null) return;
 
@@ -385,10 +435,13 @@ class _MainScreenState extends State<MainScreen> {
             driverCarDetails = rideMap["car_details"] ?? "";
             driverRatings = rideMap["driverRatings"]?.toString() ?? "";
             userRideRequestStatus = rideMap["status"] ?? "";
+
+            searchingForDriverContainerHeight = 0;
           });
+
+          showUIForDriverFound();
         }
 
-        // Driver location updates
         if (rideMap["driver_location"] != null) {
           double lat = double.parse(rideMap["driver_location"]["latitude"].toString());
           double lng = double.parse(rideMap["driver_location"]["longitude"].toString());
@@ -403,7 +456,6 @@ class _MainScreenState extends State<MainScreen> {
           }
         }
 
-        // Trip ended -> show fare dialog
         if (userRideRequestStatus == "ended" && rideMap["fareAmount"] != null) {
           double fare = double.parse(rideMap["fareAmount"].toString());
           var response = await showDialog(
@@ -418,7 +470,6 @@ class _MainScreenState extends State<MainScreen> {
       }
     });
 
-    // 5️⃣ Search nearest drivers and send notifications
     searchNearestOnlineDrivers(selectedVehicleType);
   }
 
@@ -522,7 +573,7 @@ class _MainScreenState extends State<MainScreen> {
 
       startListeningToNearbyDrivers(
           LatLng(cPosition.latitude, cPosition.longitude),
-          10.0  // 10 km radius
+          10.0
       );
 
       String humanReadableAddress = await AssistantMethods.searchAddressForGeographicCoordinates(
@@ -594,7 +645,6 @@ class _MainScreenState extends State<MainScreen> {
       await ref.child(driverId).once().then((dataSnapshot) {
         var driverMap = dataSnapshot.snapshot.value as Map<dynamic, dynamic>;
 
-        // Create an ActiveNearbyAvailableDrivers object with all required fields
         ActiveNearbyAvailableDrivers driver = ActiveNearbyAvailableDrivers(
           driverId: driverId,
           name: driverMap['name'] ?? "Unknown",
@@ -751,6 +801,47 @@ class _MainScreenState extends State<MainScreen> {
         );
       }
     }
+  }
+
+  Widget _buildDebugDriverButton(bool darkTheme) {
+    return Positioned(
+      top: 90,
+      right: 10,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.orange,
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
+        ),
+        child: IconButton(
+          icon: Icon(Icons.bug_report, color: Colors.white),
+          onPressed: () async {
+            print("DEBUG: Manual driver check");
+
+            var snapshot = await FirebaseDatabase.instance.ref().child("Drivers").once();
+
+            if (snapshot.snapshot.value == null) {
+              print("No Drivers node in Firebase");
+              Fluttertoast.showToast(msg: "No Drivers node in Firebase!");
+              return;
+            }
+
+            var drivers = snapshot.snapshot.value as Map;
+            print("Firebase has ${drivers.length} drivers");
+
+            drivers.forEach((key, value) {
+              print("Driver $key:");
+              print("Full data: $value");
+            });
+
+            Fluttertoast.showToast(
+              msg: "Check console for driver data",
+              gravity: ToastGravity.CENTER,
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildDrawer(bool darkTheme) {
