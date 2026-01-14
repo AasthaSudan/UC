@@ -18,18 +18,29 @@ class AssistantMethods {
   static Future<void> readCurrentOnlineUserInfo() async {
     currentUser = firebaseAuth.currentUser;
 
-    if (currentUser == null) return;
+    if (currentUser == null) {
+      print("Error: User information is null - No user logged in");
+      return;
+    }
 
-    DatabaseReference userRef = FirebaseDatabase.instance
-        .ref()
-        .child("users")
-        .child(currentUser!.uid);
+    try {
+      DatabaseReference userRef = FirebaseDatabase.instance
+          .ref()
+          .child("users")
+          .child(currentUser!.uid);
 
-    userRef.once().then((snap) {
-      if (snap.snapshot.value != null) {
-        userModelCurrentInfo = UserModel.fromSnapshot(snap.snapshot);
+      DatabaseEvent event = await userRef.once();
+      DataSnapshot snapshot = event.snapshot;
+
+      if (snapshot.exists && snapshot.value != null) {
+        userModelCurrentInfo = UserModel.fromSnapshot(snapshot);
+        print("User info loaded: ${userModelCurrentInfo?.name}");
+      } else {
+        print("Error: User information is null - No data in database");
       }
-    });
+    } catch (e) {
+      print("Error reading user info: $e");
+    }
   }
 
   static Future<String> searchAddressForGeographicCoordinates(Position position, context) async {

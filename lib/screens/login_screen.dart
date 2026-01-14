@@ -34,15 +34,25 @@ class _LoginScreenState extends State<LoginScreen> {
       currentUser = auth.user;
 
       if (currentUser != null) {
-        Fluttertoast.showToast(msg: "Logged in Successfully");
+        await readCurrentUserInfo();
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (c) => const MainScreen()),
-        );
+        if (userModelCurrentInfo != null) {
+          Fluttertoast.showToast(msg: "Logged in Successfully");
+
+          if (!mounted) return;
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (c) => const MainScreen()),
+          );
+        } else {
+          Fluttertoast.showToast(msg: "Failed to load user data");
+        }
       }
     } on FirebaseAuthException catch (e) {
       Fluttertoast.showToast(msg: e.message ?? "Login failed");
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Error: $e");
     }
   }
 

@@ -14,6 +14,7 @@ import '../widgets/pay_fare_amount_dialog.dart';
 import 'screens/login_screen.dart';
 import 'screens/new_ride_screen.dart';
 import 'screens/new_ride_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,9 +34,34 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,
-        home: MainScreen(),
+        home: const AuthCheck(),
         debugShowCheckedModeBanner: false,
       ),
+    );
+  }
+}
+
+class AuthCheck extends StatelessWidget {
+  const AuthCheck({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasData && snapshot.data != null) {
+          return const MainScreen();
+        }
+        return const LoginScreen();
+      },
     );
   }
 }

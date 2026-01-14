@@ -250,20 +250,40 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void saveRideRequestInformation(String selectedVehicleType) {
-    if (userModelCurrentInfo == null) {
-      print("Error: User information is null");
+    if (currentUser == null) {
+      print("Error: No user logged in");
       Fluttertoast.showToast(
-        msg: "Error: User information not available. Please login again.",
+        msg: "Please login to request a ride",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
       );
       return;
     }
 
-    if (userModelCurrentInfo!.name == null || userModelCurrentInfo!.phone == null) {
-      print("Error: User name or phone is null");
+    if (userModelCurrentInfo == null) {
+      print("Error: User information is null - attempting to load");
+
+      readCurrentUserInfo().then((_) {
+        if (userModelCurrentInfo != null) {
+          saveRideRequestInformation(selectedVehicleType);
+        } else {
+          Fluttertoast.showToast(
+            msg: "Failed to load user data. Please restart the app.",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+          );
+        }
+      });
+      return;
+    }
+
+    if (userModelCurrentInfo!.name == null ||
+        userModelCurrentInfo!.name!.isEmpty ||
+        userModelCurrentInfo!.phone == null ||
+        userModelCurrentInfo!.phone!.isEmpty) {
+      print("Error: User name or phone is null/empty");
       Fluttertoast.showToast(
-        msg: "Error: User profile incomplete. Please update your profile.",
+        msg: "Please complete your profile before requesting a ride",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
       );
@@ -299,8 +319,8 @@ class _MainScreenState extends State<MainScreen> {
       "origin": originLocationMap,
       "destination": destinationLocationMap,
       "time": DateTime.now().toString(),
-      "userName": firebaseAuth.currentUser?.displayName ?? "User",
-      "userPhone": firebaseAuth.currentUser?.phoneNumber ?? "Unknown",
+      "userName": userModelCurrentInfo!.name ?? "User",
+      "userPhone": userModelCurrentInfo!.phone ?? "Unknown",
       "originAddress": originLocation.locationName ?? "Unknown",
       "destinationAddress": destinationLocation.locationName ?? "Unknown",
       "driverId": "waiting",
@@ -409,6 +429,16 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     checkIfLocationPermissionAllowed();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    if (userModelCurrentInfo == null) {
+      await readCurrentUserInfo();
+      if (mounted) {
+        setState(() {});
+      }
+    }
   }
 
   void showSuggestedRidesContainer() {
@@ -828,78 +858,87 @@ class _MainScreenState extends State<MainScreen> {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-          key: scaffoldState,
-          drawer: _buildDrawer(darkTheme),
-          body: Stack(
-            children: [
-            FlutterMap(
-            mapController: mapController,
-            options: MapOptions(
-              initialCenter: pickLocation ?? _initialLocation,
-              initialZoom: 5.0,
-              minZoom: 4.0,
-              maxZoom: 18.0,
-              cameraConstraint: CameraConstraint.contain(
-                bounds: _indiaBounds,
-              ),
-              onTap: (tapPosition, point) {
-                setState(() {
+        key: scaffoldState,
+        drawer: _buildDrawer(darkTheme),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: SafeArea(
+              child: FlutterMap(
+              mapController: mapController,
+              options: MapOptions(
+                initialCenter: pickLocation ?? _initialLocation,
+                initialZoom: 5.0,
+                minZoom: 4.0,
+                maxZoom: 18.0,
+                cameraConstraint: CameraConstraint.contain(
+                  bounds: _indiaBounds,
+                ),
+                onTap: (tapPosition, point) {
                   pickLocation = point;
-                });
-                getAddressFromLatLng();
-              },
-              onPositionChanged: (position, hasGesture) {
-                if (hasGesture && position.center != null) {
-                  setState(() {
-                    pickLocation = position.center;
-                  });
 
-                  if (_debounce?.isActive ?? false) _debounce!.cancel();
-                  _debounce = Timer(const Duration(milliseconds: 1000), () {
+                  _debounce?.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 500), () {
+                    if (!mounted) return;
+                    setState(() {});
                     getAddressFromLatLng();
                   });
-                }
-              },
-            ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.example.project_1',
-                  ),
-                if (polylinePoints.isNotEmpty)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: polylinePoints,
-                      strokeWidth: 5.0,
-                      color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                      borderStrokeWidth: 2.0,
-                      borderColor: darkTheme ? Colors.amber.shade700 : Colors.blue.shade700,
-                    ),
-                  ],
+                },
+
+                onPositionChanged: (position, hasGesture) {
+                  if (!hasGesture || position.center == null) return;
+
+                  pickLocation = position.center;
+
+                  _debounce?.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 800), () {
+                    if (!mounted) return;
+                    setState(() {});
+                    getAddressFromLatLng();
+                  });
+                },
+
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.project_1',
                 ),
-              if (circles.isNotEmpty)
-                CircleLayer(circles: circles),
-              if (markers.isNotEmpty)
-                MarkerLayer(markers: markers),
+                if (polylinePoints.isNotEmpty)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: polylinePoints,
+                        strokeWidth: 5.0,
+                        color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                        borderStrokeWidth: 2.0,
+                        borderColor: darkTheme ? Colors.amber.shade700 : Colors.blue.shade700,
+                      ),
+                    ],
+                  ),
+                if (circles.isNotEmpty)
+                  CircleLayer(circles: circles),
+                if (markers.isNotEmpty)
+                  MarkerLayer(markers: markers),
               ],
             ),
+          ),
+        ),
 
-              if (pickLocation != null && markers.isEmpty)
-                Positioned.fill(
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Transform.translate(
-                      offset: const Offset(0, -25),
-                      child: Icon(
-                        Icons.location_on,
-                        size: 50,
-                        color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                      ),
+            if (pickLocation != null && markers.isEmpty)
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Transform.translate(
+                    offset: const Offset(0, -25),
+                    child: Icon(
+                      Icons.location_on,
+                      size: 50,
+                      color: darkTheme ? Colors.amber.shade400 : Colors.blue,
                     ),
                   ),
                 ),
-
+              ),
 
             Positioned(
               top: 30,
@@ -1591,7 +1630,7 @@ class _MainScreenState extends State<MainScreen> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Image.asset(
-                                "assets/images/img_7.png",
+                                "assets/images/img_4.png",
                                 scale: 3,
                               ),
                               const SizedBox(height: 5),
