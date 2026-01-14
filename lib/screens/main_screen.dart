@@ -19,6 +19,7 @@ import '../models/active_nearby_available_drivers.dart';
 import '../assistants/geofire_assistant.dart';
 import '../widgets/pay_fare_amount_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 Future<void> _makePhoneCall(String phoneNumber) async {
   final Uri url = Uri(scheme: 'tel', path: phoneNumber);
@@ -39,6 +40,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   LatLng? pickLocation;
   String? _address;
+  DatabaseReference? referenceRideRequest;
 
   final MapController mapController = MapController();
 
@@ -88,6 +90,94 @@ class _MainScreenState extends State<MainScreen> {
     _debounce?.cancel();
     tripRideRequestInfoStreamSubscription?.cancel();
     super.dispose();
+  }
+
+  void startListeningToNearbyDrivers(LatLng userLocation, double radiusInKm) {
+    print("🔍 Starting to listen for drivers within ${radiusInKm}km of ${userLocation.latitude}, ${userLocation.longitude}");
+
+    // Clear existing list
+    GeoFireAssistant.activeNearbyAvailableDriversList.clear();
+
+    DatabaseReference driversRef = FirebaseDatabase.instance.ref().child("Drivers");
+
+    // Listen for new drivers
+    driversRef.onValue.listen((event) {
+      if (event.snapshot.value == null) {
+        print("⚠️ No drivers found in database");
+        return;
+      }
+
+      final driversMap = event.snapshot.value as Map<dynamic, dynamic>;
+      print("📊 Found ${driversMap.length} total drivers in database");
+
+      // Clear and rebuild the list
+      GeoFireAssistant.activeNearbyAvailableDriversList.clear();
+
+      driversMap.forEach((key, value) {
+        final driverData = value as Map<dynamic, dynamic>;
+
+        // Check if driver has location data
+        if (driverData["latitude"] == null || driverData["longitude"] == null) {
+          print("⚠️ Driver $key has no location data");
+          return;
+        }
+
+        double driverLat = double.parse(driverData["latitude"].toString());
+        double driverLng = double.parse(driverData["longitude"].toString());
+
+        // Calculate distance
+        final distance = Distance().as(
+          LengthUnit.Kilometer,
+          LatLng(driverLat, driverLng),
+          userLocation,
+        );
+
+        print("📍 Driver $key is ${distance.toStringAsFixed(2)}km away, Available: ${driverData["isAvailable"]}");
+
+        // Check if driver is within radius and available
+        if (distance <= radiusInKm) {
+          bool isAvailable = driverData["isAvailable"] == true ||
+              driverData["isAvailable"] == "true" ||
+              driverData["isAvailable"] == 1;
+
+          if (isAvailable) {
+            var carDetails = driverData['car_details'];
+            String carType = "Unknown";
+            String carModel = "Unknown";
+
+            if (carDetails != null) {
+              if (carDetails is Map) {
+                carType = carDetails['car_type']?.toString() ?? "Unknown";
+                carModel = carDetails['car_model']?.toString() ?? "Unknown";
+              } else if (carDetails is String) {
+                carType = carDetails;
+              }
+            }
+
+            GeoFireAssistant.activeNearbyAvailableDriversList.add(
+              ActiveNearbyAvailableDrivers(
+                driverId: key.toString(),
+                name: driverData['name']?.toString() ?? "Unknown",
+                phone: driverData['phone']?.toString() ?? "Unknown",
+                locationLatitude: driverLat,
+                locationLongitude: driverLng,
+                carModel: carModel,
+                carType: carType,
+              ),
+            );
+            print("✅ Driver added: $key ($carType) - ${distance.toStringAsFixed(2)}km away");
+          } else {
+            print("❌ Driver $key is not available");
+          }
+        }
+      });
+
+      print("✅ Total available drivers nearby: ${GeoFireAssistant.activeNearbyAvailableDriversList.length}");
+
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   void updateDriversLocationAtRealTime(LatLng driverCurrentPositionLatLng) async {
@@ -151,19 +241,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void searchNearestOnlineDrivers(String selectedVehicleType) async {
+    onlineNearByAvailableDriversList = GeoFireAssistant.activeNearbyAvailableDriversList;
+
     if (onlineNearByAvailableDriversList.isEmpty) {
       referenceRideRequest?.remove();
-
-      if (mounted) {
-        setState(() {
-          polylinePoints.clear();
-          markers.clear();
-          circles.clear();
-          suggestedRidesContainerHeight = 0;
-          bottomPaddingOfMap = 0;
-        });
-      }
-
       Fluttertoast.showToast(
         msg: "No drivers available nearby. Please try again.",
         toastLength: Toast.LENGTH_SHORT,
@@ -173,59 +254,32 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     if (referenceRideRequest == null) {
-      print("Error: referenceRideRequest is null");
       Fluttertoast.showToast(
-        msg: "Error: Please try requesting a ride again.",
+        msg: "Error: Ride request not initialized",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
       );
       return;
     }
 
-    if (mounted) {
-      setState(() {
-        waitingResponsefromDriverContainerHeight = 220;
-        bottomPaddingOfMap = 220;
-      });
-    }
+    for (var driver in onlineNearByAvailableDriversList) {
+      var driverDataRef = FirebaseDatabase.instance.ref().child("Drivers").child(driver.driverId!);
+      var driverSnapshot = await driverDataRef.once();
+      var driverData = driverSnapshot.snapshot.value as Map?;
 
-    print("Searching for nearest $selectedVehicleType drivers...");
-
-    await retrieveOnlineDriversInformation(onlineNearByAvailableDriversList);
-
-    print("Driver List: " + driversList.toString());
-
-    for (int i = 0; i < driversList.length; i++) {
-      if (driversList[i]["car_details"] == selectedVehicleType) {
+      if (driverData != null &&
+          driverData["car_details"]?["car_type"] == selectedVehicleType) {
         if (referenceRideRequest?.key != null) {
           AssistantMethods.sendNotificationToDriverNow(
-              driversList[i]["token"],
-              referenceRideRequest!.key!,
-              context
+            driverData["token"],
+            referenceRideRequest!.key!,
+            context,
           );
+          print("Notification sent to driver ${driver.driverId}");
         }
         break;
       }
     }
-
-    Fluttertoast.showToast(msg: "Notification sent successfully");
-
-    showSearchingForDriversContainer();
-
-    FirebaseDatabase.instance
-        .ref()
-        .child("All Ride Requests")
-        .child(referenceRideRequest!.key!)
-        .child("driverId")
-        .onValue
-        .listen((eventRideRequestSnapshot) {
-      print("EventSnapshot: ${eventRideRequestSnapshot.snapshot.value}");
-      if (eventRideRequestSnapshot.snapshot.value != null) {
-        if (eventRideRequestSnapshot.snapshot.value != "waiting") {
-          showUIForDriverFound();
-        }
-      }
-    });
   }
 
   void showUIForDriverFound() {
@@ -248,180 +302,123 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
   }
-
-  void saveRideRequestInformation(String selectedVehicleType) {
-    if (currentUser == null) {
-      print("Error: No user logged in");
+  void saveRideRequestInformation(String selectedVehicleType) async {
+    // 1️⃣ Validate user
+    if (currentUser == null || userModelCurrentInfo == null) {
       Fluttertoast.showToast(
         msg: "Please login to request a ride",
-        toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
+        toastLength: Toast.LENGTH_SHORT,
       );
+      if (userModelCurrentInfo == null) await readCurrentUserInfo();
       return;
     }
 
-    if (userModelCurrentInfo == null) {
-      print("Error: User information is null - attempting to load");
-
-      readCurrentUserInfo().then((_) {
-        if (userModelCurrentInfo != null) {
-          saveRideRequestInformation(selectedVehicleType);
-        } else {
-          Fluttertoast.showToast(
-            msg: "Failed to load user data. Please restart the app.",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.CENTER,
-          );
-        }
-      });
-      return;
-    }
-
-    if (userModelCurrentInfo!.name == null ||
-        userModelCurrentInfo!.name!.isEmpty ||
-        userModelCurrentInfo!.phone == null ||
-        userModelCurrentInfo!.phone!.isEmpty) {
-      print("Error: User name or phone is null/empty");
+    if ((userModelCurrentInfo!.name == null || userModelCurrentInfo!.name!.isEmpty) ||
+        (userModelCurrentInfo!.phone == null || userModelCurrentInfo!.phone!.isEmpty)) {
       Fluttertoast.showToast(
         msg: "Please complete your profile before requesting a ride",
-        toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
+        toastLength: Toast.LENGTH_SHORT,
       );
       return;
     }
 
-    var originLocation = Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
-    var destinationLocation = Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
-
-    if (originLocation == null || destinationLocation == null) {
-      print("Error: Origin or destination location is null");
+    // 2️⃣ Validate locations
+    var origin = Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
+    var destination = Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
+    if (origin == null || destination == null) {
       Fluttertoast.showToast(
         msg: "Please select both pickup and drop-off locations",
-        toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
+        toastLength: Toast.LENGTH_SHORT,
       );
       return;
     }
 
+    // ✅ Check if drivers are available BEFORE creating request
+    if (GeoFireAssistant.activeNearbyAvailableDriversList.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "No drivers available nearby. Please try again later.",
+        gravity: ToastGravity.CENTER,
+        toastLength: Toast.LENGTH_LONG,
+      );
+      return;
+    }
+
+    print("📱 Available drivers: ${GeoFireAssistant.activeNearbyAvailableDriversList.length}");
+
+    // 3️⃣ Create ride request in Firebase
     referenceRideRequest = FirebaseDatabase.instance.ref().child("All Ride Requests").push();
-
-    Map originLocationMap = {
-      "latitude": originLocation.locationLatitude.toString(),
-      "longitude": originLocation.locationLongitude.toString(),
-    };
-
-    Map destinationLocationMap = {
-      "latitude": destinationLocation.locationLatitude.toString(),
-      "longitude": destinationLocation.locationLongitude.toString(),
-    };
-
-    Map userInformationMap = {
-      "origin": originLocationMap,
-      "destination": destinationLocationMap,
+    Map rideData = {
+      "origin": {"latitude": origin.locationLatitude.toString(), "longitude": origin.locationLongitude.toString()},
+      "destination": {"latitude": destination.locationLatitude.toString(), "longitude": destination.locationLongitude.toString()},
       "time": DateTime.now().toString(),
-      "userName": userModelCurrentInfo!.name ?? "User",
-      "userPhone": userModelCurrentInfo!.phone ?? "Unknown",
-      "originAddress": originLocation.locationName ?? "Unknown",
-      "destinationAddress": destinationLocation.locationName ?? "Unknown",
+      "userName": userModelCurrentInfo!.name,
+      "userPhone": userModelCurrentInfo!.phone,
+      "originAddress": origin.locationName ?? "Unknown",
+      "destinationAddress": destination.locationName ?? "Unknown",
       "driverId": "waiting",
+      "status": "waiting",
     };
 
-    referenceRideRequest!.set(userInformationMap);
+    try {
+      await referenceRideRequest!.set(rideData);
+      print("✅ Ride request created: ${referenceRideRequest!.key}");
+    } catch (e) {
+      print("❌ Error creating ride request: $e");
+      Fluttertoast.showToast(msg: "Failed to create ride request");
+      return;
+    }
 
+    // 4️⃣ Listen for ride updates in real-time
     tripRideRequestInfoStreamSubscription = referenceRideRequest!.onValue.listen((eventSnap) async {
-      if (eventSnap.snapshot.value == null) {
-        return;
-      }
+      if (eventSnap.snapshot.value == null) return;
 
-      if ((eventSnap.snapshot.value as Map)["car_details"] != null) {
+      final rideMap = eventSnap.snapshot.value as Map;
+
+      if (rideMap["driverId"] != null && rideMap["driverId"] != "waiting") {
         if (mounted) {
           setState(() {
-            driverCarDetails = (eventSnap.snapshot.value as Map)["car_details"].toString();
+            driverName = rideMap["driverName"] ?? "";
+            driverPhone = rideMap["driverPhone"] ?? "";
+            driverCarDetails = rideMap["car_details"] ?? "";
+            driverRatings = rideMap["driverRatings"]?.toString() ?? "";
+            userRideRequestStatus = rideMap["status"] ?? "";
           });
         }
-      }
 
-      if ((eventSnap.snapshot.value as Map)["driverName"] != null) {
-        if (mounted) {
-          setState(() {
-            driverName = (eventSnap.snapshot.value as Map)["driverName"].toString();
-          });
-        }
-      }
+        // Driver location updates
+        if (rideMap["driver_location"] != null) {
+          double lat = double.parse(rideMap["driver_location"]["latitude"].toString());
+          double lng = double.parse(rideMap["driver_location"]["longitude"].toString());
+          LatLng driverLatLng = LatLng(lat, lng);
 
-      if ((eventSnap.snapshot.value as Map)["driverPhone"] != null) {
-        if (mounted) {
-          setState(() {
-            driverPhone = (eventSnap.snapshot.value as Map)["driverPhone"].toString();
-          });
-        }
-      }
-
-      if ((eventSnap.snapshot.value as Map)["driverRatings"] != null) {
-        if (mounted) {
-          setState(() {
-            driverRatings = (eventSnap.snapshot.value as Map)["driverRatings"].toString();
-          });
-        }
-      }
-
-      if ((eventSnap.snapshot.value as Map)["status"] != null) {
-        if (mounted) {
-          setState(() {
-            userRideRequestStatus = (eventSnap.snapshot.value as Map)["status"].toString();
-          });
-        }
-      }
-
-      if ((eventSnap.snapshot.value as Map)["driver_location"] != null) {
-        double driverCurrentPositionLat = double.parse((eventSnap.snapshot.value as Map)["driver_location"]["latitude"].toString());
-        double driverCurrentPositionLng = double.parse((eventSnap.snapshot.value as Map)["driver_location"]["longitude"].toString());
-
-        LatLng driverCurrentPositionLatLng = LatLng(driverCurrentPositionLat, driverCurrentPositionLng);
-
-        if (userRideRequestStatus == "accepted") {
-          updateDriversLocationAtRealTime(driverCurrentPositionLatLng);
-        }
-
-        if (userRideRequestStatus == "arrived") {
-          if (mounted) {
-            setState(() {
-              driverRideStatus = "Driver has arrived";
-            });
+          if (userRideRequestStatus == "accepted") updateDriversLocationAtRealTime(driverLatLng);
+          if (userRideRequestStatus == "onTrip") updateReachingTimeToUserDropOffLocation(driverLatLng);
+          if (userRideRequestStatus == "arrived") {
+            if (mounted) {
+              setState(() => driverRideStatus = "Driver has arrived");
+            }
           }
         }
 
-        if (userRideRequestStatus == "onTrip") {
-          updateReachingTimeToUserDropOffLocation(driverCurrentPositionLatLng);
-        }
-
-        if (userRideRequestStatus == "ended") {
-          if ((eventSnap.snapshot.value as Map)["fareAmount"] != null) {
-            double fareAmount = double.parse((eventSnap.snapshot.value as Map)["fareAmount"].toString());
-
-            if (mounted) {
-              var response = await showDialog(
-                context: context,
-                builder: (BuildContext context) => PayFareAmountDialog(
-                  fareAmount: fareAmount,
-                ),
-              );
-
-              if (response == "cashPaid") {
-                if ((eventSnap.snapshot.value as Map)["driverId"] != null) {
-                  String driverId = (eventSnap.snapshot.value as Map)["driverId"].toString();
-
-                  referenceRideRequest!.onDisconnect();
-                  tripRideRequestInfoStreamSubscription!.cancel();
-                }
-              }
-            }
+        // Trip ended -> show fare dialog
+        if (userRideRequestStatus == "ended" && rideMap["fareAmount"] != null) {
+          double fare = double.parse(rideMap["fareAmount"].toString());
+          var response = await showDialog(
+            context: context,
+            builder: (_) => PayFareAmountDialog(fareAmount: fare),
+          );
+          if (response == "cashPaid") {
+            referenceRideRequest!.onDisconnect();
+            tripRideRequestInfoStreamSubscription!.cancel();
           }
         }
       }
     });
 
-    onlineNearByAvailableDriversList = GeoFireAssistant.activeNearbyAvailableDriversList;
+    // 5️⃣ Search nearest drivers and send notifications
     searchNearestOnlineDrivers(selectedVehicleType);
   }
 
@@ -479,6 +476,8 @@ class _MainScreenState extends State<MainScreen> {
         }
         mapController.move(_initialLocation, 12.0);
 
+        startListeningToNearbyDrivers(_initialLocation, 10.0);
+
         Position newDelhiPosition = Position(
           latitude: _initialLocation.latitude,
           longitude: _initialLocation.longitude,
@@ -521,6 +520,11 @@ class _MainScreenState extends State<MainScreen> {
         15.0,
       );
 
+      startListeningToNearbyDrivers(
+          LatLng(cPosition.latitude, cPosition.longitude),
+          10.0  // 10 km radius
+      );
+
       String humanReadableAddress = await AssistantMethods.searchAddressForGeographicCoordinates(
         cPosition,
         context,
@@ -534,6 +538,8 @@ class _MainScreenState extends State<MainScreen> {
         });
       }
       mapController.move(_initialLocation, 5.0);
+
+      startListeningToNearbyDrivers(_initialLocation, 10.0);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -579,16 +585,28 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  Future<void> retrieveOnlineDriversInformation(List<ActiveNearbyAvailableDrivers> onlineNearByAvailableDriversList) async {
+  Future<void> retrieveOnlineDriversInformation(List<ActiveNearbyAvailableDrivers> onlineDrivers) async {
     driversList.clear();
     DatabaseReference ref = FirebaseDatabase.instance.ref().child("Drivers");
 
-    for (int i = 0; i < onlineNearByAvailableDriversList.length; i++) {
-      await ref.child(onlineNearByAvailableDriversList[i].driverId!).once().then((dataSnapshot) {
-        var driverKeyInfo = dataSnapshot.snapshot.value;
+    for (int i = 0; i < onlineDrivers.length; i++) {
+      String driverId = onlineDrivers[i].driverId!;
+      await ref.child(driverId).once().then((dataSnapshot) {
+        var driverMap = dataSnapshot.snapshot.value as Map<dynamic, dynamic>;
 
-        driversList.add(driverKeyInfo);
-        print("driver key info - " + driversList.toString());
+        // Create an ActiveNearbyAvailableDrivers object with all required fields
+        ActiveNearbyAvailableDrivers driver = ActiveNearbyAvailableDrivers(
+          driverId: driverId,
+          name: driverMap['name'] ?? "Unknown",
+          phone: driverMap['phone'] ?? "Unknown",
+          locationLatitude: (driverMap['latitude'] as num?)?.toDouble() ?? 0.0,
+          locationLongitude: (driverMap['longitude'] as num?)?.toDouble() ?? 0.0,
+          carModel: driverMap['car_details']?['car_model'] ?? "Unknown",
+          carType: driverMap['car_details']?['car_type'] ?? "Unknown",
+        );
+
+        driversList.add(driver);
+        print("Driver added: ${driver.name}, ${driver.carType}");
       });
     }
   }
@@ -940,27 +958,36 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
 
+            // Add this in your build method, maybe near the menu button
             Positioned(
               top: 30,
-              left: 10,
+              right: 10,
               child: Container(
                 decoration: BoxDecoration(
                   color: darkTheme ? Colors.black : Colors.white,
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 5,
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
                 ),
                 child: IconButton(
                   icon: Icon(
-                    Icons.menu,
+                    Icons.refresh,
                     color: darkTheme ? Colors.amber.shade400 : Colors.blue,
                   ),
                   onPressed: () {
-                    scaffoldState.currentState?.openDrawer();
+                    // Test driver detection
+                    if (pickLocation != null) {
+                      print("🔄 Refreshing drivers...");
+                      startListeningToNearbyDrivers(pickLocation!, 10.0);
+
+                      // Show count after 2 seconds
+                      Future.delayed(Duration(seconds: 2), () {
+                        int count = GeoFireAssistant.activeNearbyAvailableDriversList.length;
+                        Fluttertoast.showToast(
+                          msg: "Found $count drivers nearby",
+                          gravity: ToastGravity.CENTER,
+                        );
+                      });
+                    }
                   },
                 ),
               ),
