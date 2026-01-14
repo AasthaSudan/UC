@@ -214,15 +214,19 @@ class _MainScreenState extends State<MainScreen> {
       }
     });
   }
-  void updateDriversLocationAtRealTime(LatLng driverCurrentPositionLatLng) async {
-    if (userRideRequestStatus == "accepted") {
-      if (mounted) {
-        setState(() {
-          driverRideStatus = "Driver is coming";
-        });
-      }
 
-      var pickupLocation = Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
+  void updateDriversLocationAtRealTime(LatLng driverCurrentPositionLatLng) async {
+    if (userRideRequestStatus != "accepted") return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      setState(() {
+        driverRideStatus = "Driver is coming";
+      });
+
+      var pickupLocation =
+          Provider.of<AppInfo>(context, listen: false).userPickUpLocation;
       if (pickupLocation == null) return;
 
       var originLatLng = LatLng(
@@ -230,29 +234,35 @@ class _MainScreenState extends State<MainScreen> {
         pickupLocation.locationLongitude!,
       );
 
-      var directionDetailsInfo = await AssistantMethods.obtainOriginToDestinationDirectionDetails(
+      var directionDetailsInfo =
+      await AssistantMethods.obtainOriginToDestinationDirectionDetails(
         driverCurrentPositionLatLng,
         originLatLng,
       );
 
-      tripDirectionDetailsInfo = directionDetailsInfo;
-
       if (directionDetailsInfo != null && mounted) {
         setState(() {
-          driverRideStatus = "Driver is coming - ${directionDetailsInfo.duration_text}";
+          driverRideStatus =
+          "Driver is coming - ${directionDetailsInfo.duration_text}";
         });
       }
-    }
+    });
   }
 
-  void updateReachingTimeToUserDropOffLocation(LatLng driverCurrentPositionLatLng) async {
-    if (userRideRequestStatus == "onTrip") {
-      if (mounted) {
-        setState(() {
-          driverRideStatus = "Going to destination";
-        });
-      }
-      var dropOffLocation = Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
+  void updateReachingTimeToUserDropOffLocation(
+      LatLng driverCurrentPositionLatLng) async {
+
+    if (userRideRequestStatus != "onTrip") return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      setState(() {
+        driverRideStatus = "Going to destination";
+      });
+
+      var dropOffLocation =
+          Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
       if (dropOffLocation == null) return;
 
       var dropOffLatLng = LatLng(
@@ -260,24 +270,34 @@ class _MainScreenState extends State<MainScreen> {
         dropOffLocation.locationLongitude!,
       );
 
-      var directionDetailsInfo = await AssistantMethods.obtainOriginToDestinationDirectionDetails(
+      var directionDetailsInfo =
+      await AssistantMethods.obtainOriginToDestinationDirectionDetails(
         driverCurrentPositionLatLng,
         dropOffLatLng,
       );
 
       if (directionDetailsInfo != null && mounted) {
         setState(() {
-          driverRideStatus = "Going to destination - ${directionDetailsInfo.duration_text}";
+          driverRideStatus =
+          "Going to destination - ${directionDetailsInfo.duration_text}";
         });
       }
-    }
+    });
   }
 
   void searchNearestOnlineDrivers(String selectedVehicleType) async {
+    print("Searching for $selectedVehicleType drivers...");
+
     onlineNearByAvailableDriversList = GeoFireAssistant.activeNearbyAvailableDriversList;
 
     if (onlineNearByAvailableDriversList.isEmpty) {
+      print("No drivers in the list");
       referenceRideRequest?.remove();
+
+      setState(() {
+        searchingForDriverContainerHeight = 0;
+      });
+
       Fluttertoast.showToast(
         msg: "No drivers available nearby. Please try again.",
         toastLength: Toast.LENGTH_SHORT,
@@ -287,6 +307,7 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     if (referenceRideRequest == null) {
+      print("Ride request reference is null");
       Fluttertoast.showToast(
         msg: "Error: Ride request not initialized",
         toastLength: Toast.LENGTH_SHORT,
@@ -295,25 +316,97 @@ class _MainScreenState extends State<MainScreen> {
       return;
     }
 
+    print("Checking ${onlineNearByAvailableDriversList.length} drivers for $selectedVehicleType type");
+
+    bool driverFound = false;
+
     for (var driver in onlineNearByAvailableDriversList) {
-      var driverDataRef = FirebaseDatabase.instance.ref().child("Drivers").child(driver.driverId!);
+      print("Checking driver: ${driver.name} (${driver.carType})");
+
+      var driverDataRef = FirebaseDatabase.instance
+          .ref()
+          .child("Drivers")
+          .child(driver.driverId!);
+
       var driverSnapshot = await driverDataRef.once();
+
+      if (driverSnapshot.snapshot.value == null) {
+        print("Driver ${driver.driverId} data not found in Firebase");
+        continue;
+      }
+
       var driverData = driverSnapshot.snapshot.value as Map?;
 
-      if (driverData != null &&
-          driverData["car_details"]?["car_type"] == selectedVehicleType) {
-        if (referenceRideRequest?.key != null) {
-          AssistantMethods.sendNotificationToDriverNow(
-            driverData["token"],
-            referenceRideRequest!.key!,
-            context,
-          );
-          print("Notification sent to driver ${driver.driverId}");
+      if (driverData != null) {
+        String driverCarType = "Unknown";
+
+        if (driverData["car_details"] != null) {
+          var carDetails = driverData["car_details"];
+          if (carDetails is Map && carDetails["car_type"] != null) {
+            driverCarType = carDetails["car_type"].toString();
+          }
         }
-        break;
+
+        print("Car type in DB: $driverCarType, Looking for: $selectedVehicleType");
+
+        if (driverCarType == selectedVehicleType) {
+          print("Match found! Sending notification to driver ${driver.name}");
+
+          String? driverToken = driverData["token"]?.toString();
+
+          if (driverToken == null || driverToken.isEmpty) {
+            print("Driver ${driver.name} has no FCM token, skipping notification");
+            print("Note: Driver won't receive push notification but ride request is created");
+
+            driverFound = true;
+            break;
+          }
+
+          if (referenceRideRequest?.key != null) {
+            try {
+              await AssistantMethods.sendNotificationToDriverNow(
+                driverToken,
+                referenceRideRequest!.key!,
+                context,
+              );
+              print("Notification sent successfully to driver ${driver.name}");
+              driverFound = true;
+              break;
+            } catch (e) {
+              print("Error sending notification: $e");
+              driverFound = true;
+              break;
+            }
+          }
+        } else {
+          print("Car type mismatch: $driverCarType != $selectedVehicleType");
+        }
       }
     }
+
+    if (driverFound) {
+      print("Driver found and notified");
+      Fluttertoast.showToast(
+        msg: "Driver found! Waiting for response...",
+        gravity: ToastGravity.CENTER,
+      );
+    } else {
+      print("No driver found with vehicle type: $selectedVehicleType");
+
+      referenceRideRequest?.remove();
+
+      setState(() {
+        searchingForDriverContainerHeight = 0;
+      });
+
+      Fluttertoast.showToast(
+        msg: "No $selectedVehicleType drivers available nearby.",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.CENTER,
+      );
+    }
   }
+
 
   void showUIForDriverFound() {
     if (mounted) {
