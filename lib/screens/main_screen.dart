@@ -252,7 +252,6 @@ class _MainScreenState extends State<MainScreen> {
           driverRideStatus = "Going to destination";
         });
       }
-
       var dropOffLocation = Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
       if (dropOffLocation == null) return;
 
