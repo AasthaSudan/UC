@@ -7,6 +7,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'main_screen.dart';
 import '../global/global.dart';
+import 'car_info_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -59,7 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Fluttertoast.showToast(msg: "Successfully Registered");
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (c) => const MainScreen()),
+          MaterialPageRoute(builder: (c) => CarInfoScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {

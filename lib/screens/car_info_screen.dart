@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:project_1/screens/splash.dart';
+import '../global/global.dart';
 
 class CarInfoScreen extends StatefulWidget {
   const CarInfoScreen({super.key});
@@ -17,8 +21,64 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
-  bool _passwordVisible = false;
-  bool _confirmVisible = false;
+  @override
+  void dispose() {
+    carModelTextEditingController.dispose();
+    carNumberTextEditingController.dispose();
+    carColorTextEditingController.dispose();
+    super.dispose();
+  }
+
+  _submit() async {
+    if (_formKey.currentState!.validate()) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext c) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
+      Map<String, dynamic> driverCarInfoMap = {
+        "car_color": carColorTextEditingController.text.trim(),
+        "car_number": carNumberTextEditingController.text.trim(),
+        "car_model": carModelTextEditingController.text.trim(),
+        "car_type": selectedCarType,
+      };
+
+      DatabaseReference ref = FirebaseDatabase.instance
+          .ref()
+          .child("Drivers")
+          .child(currentUser!.uid)
+          .child("car_details");
+
+      await ref.set(driverCarInfoMap);
+
+      if (mounted) Navigator.pop(context);
+
+      Fluttertoast.showToast(
+        msg: "Car Details Submitted Successfully",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+      );
+
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (c) => SplashScreen()),
+              (route) => false,
+        );
+      }
+    } else {
+      Fluttertoast.showToast(
+        msg: "Please fill all fields",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +88,7 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         body: ListView(
-          padding: EdgeInsets.all(0),
+          padding: const EdgeInsets.all(0),
           children: [
             Column(
               children: [
@@ -38,7 +98,7 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                   width: double.infinity,
                   height: 250,
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Text(
                   "Add Car Details",
                   style: TextStyle(
@@ -56,11 +116,14 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                         _inputField(
                           darkTheme: darkTheme,
                           controller: carModelTextEditingController,
-                          icon: Icons.car_repair,
-                          hint: "Car Model",
+                          icon: Icons.directions_car,
+                          hint: "Car Model (e.g., Honda City)",
                           validator: (text) {
                             if (text == null || text.isEmpty) {
                               return 'Car model cannot be empty';
+                            }
+                            if (text.length < 2) {
+                              return 'Car model must be at least 2 characters';
                             }
                             return null;
                           },
@@ -70,11 +133,14 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                         _inputField(
                           darkTheme: darkTheme,
                           controller: carNumberTextEditingController,
-                          icon: Icons.numbers,
-                          hint: "Car Number",
+                          icon: Icons.confirmation_number,
+                          hint: "Car Number (e.g., DL01AB1234)",
                           validator: (text) {
                             if (text == null || text.isEmpty) {
                               return 'Car number cannot be empty';
+                            }
+                            if (text.length < 5) {
+                              return 'Please enter a valid car number';
                             }
                             return null;
                           },
@@ -85,7 +151,7 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                           darkTheme: darkTheme,
                           controller: carColorTextEditingController,
                           icon: Icons.color_lens,
-                          hint: "Car Color",
+                          hint: "Car Color (e.g., White)",
                           validator: (text) {
                             if (text == null || text.isEmpty) {
                               return 'Car color cannot be empty';
@@ -95,13 +161,17 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Car Type Dropdown
                         DropdownButtonFormField<String>(
                           value: selectedCarType,
                           items: carTypes.map((String carType) {
                             return DropdownMenuItem<String>(
                               value: carType,
-                              child: Text(carType),
+                              child: Text(
+                                carType,
+                                style: TextStyle(
+                                  color: darkTheme ? Colors.white : Colors.black,
+                                ),
+                              ),
                             );
                           }).toList(),
                           onChanged: (newValue) {
@@ -111,6 +181,13 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                           },
                           decoration: InputDecoration(
                             hintText: "Select Car Type",
+                            hintStyle: TextStyle(
+                              color: darkTheme ? Colors.grey.shade400 : Colors.grey.shade600,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.category,
+                              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                            ),
                             filled: true,
                             fillColor: darkTheme ? Colors.black45 : Colors.grey.shade200,
                             border: OutlineInputBorder(
@@ -118,6 +195,7 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                               borderSide: BorderSide.none,
                             ),
                           ),
+                          dropdownColor: darkTheme ? Colors.grey.shade800 : Colors.white,
                           validator: (value) {
                             if (value == null) {
                               return 'Please select a car type';
@@ -126,7 +204,7 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                           },
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 30),
 
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
@@ -136,62 +214,19 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
                               borderRadius: BorderRadius.circular(32),
                             ),
                             minimumSize: const Size(double.infinity, 50),
+                            elevation: 3,
                           ),
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Car Details Submitted')),
-                              );
-                            }
-                          },
+                          onPressed: _submit,
                           child: const Text(
-                            "Submit", // Changed from Register to Submit
-                            style: TextStyle(fontSize: 20),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        GestureDetector(
-                          onTap: () {
-                            // Add navigation for Forgot Password if necessary
-                          },
-                          child: Text(
-                            'Forgot Password?',
+                            "Submit",
                             style: TextStyle(
-                              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 20),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Doesn't have an account?",
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            GestureDetector(
-                              onTap: () {
-                                // Add navigation for Register if necessary
-                              },
-                              child: Text(
-                                "Register",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -214,6 +249,9 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
     return TextFormField(
       controller: controller,
       validator: validator,
+      style: TextStyle(
+        color: darkTheme ? Colors.white : Colors.black,
+      ),
       decoration: InputDecoration(
         prefixIcon: Icon(
           icon,
@@ -222,9 +260,30 @@ class _CarInfoScreenState extends State<CarInfoScreen> {
         filled: true,
         fillColor: darkTheme ? Colors.black45 : Colors.grey.shade200,
         hintText: hint,
+        hintStyle: TextStyle(
+          color: darkTheme ? Colors.grey.shade400 : Colors.grey.shade600,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(40),
           borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(40),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(40),
+          borderSide: BorderSide(
+            color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+            width: 2,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(40),
+          borderSide: const BorderSide(
+            color: Colors.red,
+            width: 2,
+          ),
         ),
       ),
     );
