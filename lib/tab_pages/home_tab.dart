@@ -25,12 +25,6 @@ class _HomeTabState extends State<HomeTab> {
   Color buttonColor = Colors.red;
   bool isDriverActive = false;
   bool isLoading = false;
-  //
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _initialize();
-  // }
 
   @override
   void dispose() {
