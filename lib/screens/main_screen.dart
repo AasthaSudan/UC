@@ -1530,7 +1530,6 @@ class _MainScreenState extends State<MainScreen> {
                         const SizedBox(height: 15),
                         Row(
                           children: [
-                            // Car Option
                             Expanded(
                               child: GestureDetector(
                                 onTap: () {
@@ -1590,7 +1589,6 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                               ),
                             ),
-                            // CNG Option
                             Expanded(
                               child: GestureDetector(
                                 onTap: () {
@@ -1650,7 +1648,6 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                               ),
                             ),
-                            // Bike Option
                             Expanded(
                               child: GestureDetector(
                                 onTap: () {
