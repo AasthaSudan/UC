@@ -6,8 +6,6 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
-
-// Import your models and helpers
 import '../models/user_ride_request_info.dart';
 import '../info/directions_details_info.dart';
 import '../assistants/assistant_methods.dart';
@@ -72,7 +70,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
       return;
     }
 
-    // Decode the polyline from OpenRouteService
     print("Got direction details, decoding polyline...");
     polylinePoints = _routeService.decodePolyline(directionDetailsInfo.e_points!);
     print("Decoded ${polylinePoints.length} route points");
@@ -88,10 +85,8 @@ class _NewRideScreenState extends State<NewRideScreen> {
       polylines.add(polyline);
     });
 
-    // Calculate bounds
     LatLngBounds bounds = LatLngBounds.fromPoints([originLatLng, destinationLatLng]);
 
-    // Animate camera to fit bounds
     mapController.fitCamera(
       CameraFit.bounds(
         bounds: bounds,
@@ -99,7 +94,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
       ),
     );
 
-    // Add markers
     Marker originMarker = Marker(
       point: originLatLng,
       width: 80,
@@ -122,7 +116,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
       ),
     );
 
-    // Add circles
     CircleMarker originCircle = CircleMarker(
       point: originLatLng,
       color: Colors.greenAccent.withOpacity(0.3),
@@ -165,7 +158,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
         onlineDriverCurrentPosition!.longitude,
       );
 
-      // Create driver marker
       Marker liveDriverMarker = Marker(
         point: latLngLiveDriverPosition,
         width: 80,
@@ -178,10 +170,8 @@ class _NewRideScreenState extends State<NewRideScreen> {
       );
 
       setState(() {
-        // Move camera to driver's position
         mapController.move(latLngLiveDriverPosition, 16);
 
-        // Update driver marker - keep origin and destination markers
         markers.removeWhere((marker) =>
         marker.child is Icon && (marker.child as Icon).icon == Icons.directions_car
         );
@@ -190,7 +180,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
 
       updateDurationTimeAtRealTime();
 
-      // Update driver location in Firebase
       Map<String, String> driverLatLngMap = {
         "latitude": onlineDriverCurrentPosition!.latitude.toString(),
         "longitude": onlineDriverCurrentPosition!.longitude.toString(),
@@ -262,7 +251,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
   }
 
   saveAssignedDriverInfo() async {
-    // Get current location first
     try {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -276,7 +264,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
           .child("All Ride Requests")
           .child(widget.userRideRequestDetails!.rideRequestId!);
 
-      // Check if ride is still available
       DataSnapshot snapshot = await databaseReference.child("driverId").get();
 
       if (snapshot.value == null || snapshot.value == "waiting") {
@@ -285,7 +272,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
           "longitude": currentPosition!.longitude.toString(),
         };
 
-        // Update all driver info
         await databaseReference.child("driverId").set(onlineDriverData.id);
         await databaseReference.child("driver_name").set(onlineDriverData.name);
         await databaseReference.child("driver_phone").set(onlineDriverData.phone);
@@ -298,7 +284,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
 
         saveRideRequestIdToDriverHistory();
 
-        // Initialize map and tracking
         if (mounted) {
           bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
           var driverCurrentLatLng = LatLng(currentPosition!.latitude, currentPosition!.longitude);
@@ -385,7 +370,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
 
     streamSubscription?.cancel();
 
-    // Show fare dialog
     if (mounted) {
       bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
@@ -462,7 +446,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
     }
   }
 
-  // Make phone call to user
   Future<void> makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
@@ -505,7 +488,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
             ],
           ),
 
-          // Bottom info card
           Positioned(
             bottom: 0,
             left: 0,
@@ -529,7 +511,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Duration display
                     Text(
                       durationFromOriginToDestination.isNotEmpty
                           ? durationFromOriginToDestination
@@ -547,7 +528,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // User name and phone
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -580,7 +560,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Pickup location
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -605,7 +584,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Drop location
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -636,7 +614,6 @@ class _NewRideScreenState extends State<NewRideScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Action button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
