@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
 
 class OpenRouteService {
-  // Get your free API key from https://openrouteservice.org/dev/#/signup
   static const String apiKey = "YOUR_API_KEY_HERE";
   static const String baseUrl = "https://api.openrouteservice.org";
 
@@ -13,25 +12,20 @@ class OpenRouteService {
     ),
   );
 
-  /// Get route from start to end using OSRM (primary) or OpenRouteService (fallback)
   Future<Map<String, dynamic>?> getRoute(LatLng start, LatLng end) async {
-    // Validate coordinates
     if (!_isValidCoordinate(start) || !_isValidCoordinate(end)) {
       print('Invalid coordinates provided');
       return null;
     }
 
-    // Try OSRM first (free and fast)
     try {
       return await _getRouteFromOSRM(start, end);
     } catch (e) {
       print('OSRM failed, trying OpenRouteService: $e');
-      // Fallback to OpenRouteService
       return await _getRouteFromOpenRouteService(start, end);
     }
   }
 
-  /// Get route from OSRM (Open Source Routing Machine)
   Future<Map<String, dynamic>?> _getRouteFromOSRM(LatLng start, LatLng end) async {
     try {
       final url = 'https://router.project-osrm.org/route/v1/driving/'
@@ -76,12 +70,11 @@ class OpenRouteService {
       }
     } catch (e) {
       print('Error getting route from OSRM: $e');
-      rethrow; // Re-throw to trigger fallback
+      rethrow;
     }
     return null;
   }
 
-  /// Get route from OpenRouteService (fallback)
   Future<Map<String, dynamic>?> _getRouteFromOpenRouteService(LatLng start, LatLng end) async {
     if (apiKey == "YOUR_API_KEY_HERE") {
       print('OpenRouteService API key not configured');
@@ -121,7 +114,6 @@ class OpenRouteService {
     return null;
   }
 
-  /// Search for places using Nominatim (OpenStreetMap's geocoding service)
   Future<List<Map<String, dynamic>>> searchPlaces(String query) async {
     if (query.isEmpty || query.length < 2) {
       return [];
@@ -135,8 +127,8 @@ class OpenRouteService {
           'format': 'json',
           'addressdetails': '1',
           'limit': '10',
-          'countrycodes': 'in', // Restrict to India
-          'bounded': '1', // Prefer results within viewbox
+          'countrycodes': 'in',
+          'bounded': '1',
         },
         options: Options(
           headers: {
@@ -159,7 +151,6 @@ class OpenRouteService {
     return [];
   }
 
-  /// Reverse geocode: convert coordinates to address
   Future<Map<String, dynamic>?> reverseGeocode(LatLng location) async {
     if (!_isValidCoordinate(location)) {
       print('Invalid coordinate for reverse geocoding');
@@ -192,8 +183,6 @@ class OpenRouteService {
     return null;
   }
 
-  /// Decode polyline string to list of LatLng points
-  /// Supports both precision 5 (OSRM/Google) and precision 6 (OpenRouteService)
   List<LatLng> decodePolyline(String encoded, {int precision = 5}) {
     List<LatLng> points = [];
     int index = 0;
@@ -201,7 +190,6 @@ class OpenRouteService {
     int lat = 0;
     int lng = 0;
 
-    // Precision factor: 1E5 for precision 5, 1E6 for precision 6
     double precisionFactor = precision == 6 ? 1E6 : 1E5;
 
     while (index < len) {
@@ -209,7 +197,6 @@ class OpenRouteService {
       int shift = 0;
       int result = 0;
 
-      // Decode latitude
       do {
         b = encoded.codeUnitAt(index++) - 63;
         result |= (b & 0x1f) << shift;
@@ -221,7 +208,6 @@ class OpenRouteService {
       shift = 0;
       result = 0;
 
-      // Decode longitude
       do {
         b = encoded.codeUnitAt(index++) - 63;
         result |= (b & 0x1f) << shift;
@@ -240,7 +226,6 @@ class OpenRouteService {
     return points;
   }
 
-  /// Validate if coordinate is within valid range
   bool _isValidCoordinate(LatLng coord) {
     return coord.latitude >= -90 &&
         coord.latitude <= 90 &&
@@ -248,7 +233,6 @@ class OpenRouteService {
         coord.longitude <= 180;
   }
 
-  /// Get formatted address from Nominatim result
   String getFormattedAddress(Map<String, dynamic> result) {
     if (result.containsKey('display_name')) {
       return result['display_name'];
@@ -270,19 +254,15 @@ class OpenRouteService {
     return 'Unknown location';
   }
 
-  /// Calculate distance between two points (Haversine formula)
   double calculateDistance(LatLng start, LatLng end) {
     const Distance distance = Distance();
     return distance.as(LengthUnit.Meter, start, end);
   }
 
-  /// Cleanup method
   void dispose() {
     _dio.close();
   }
 }
 
-// Extension method to add decodePolyline directly to OpenRouteService
 extension PolylineDecoder on OpenRouteService {
-  // Already included in the main class above
 }
