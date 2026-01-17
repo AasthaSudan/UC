@@ -11,9 +11,7 @@ import '../notifications/notification_dialog_box.dart';
 class PushNotificationSystem {
   final FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-  /// Initialize cloud messaging and set up listeners
   Future<void> initializeCloudMessaging(BuildContext context) async {
-    // Request notification permissions
     NotificationSettings settings = await messaging.requestPermission(
       alert: true,
       announcement: false,
@@ -26,7 +24,6 @@ class PushNotificationSystem {
 
     print('User granted permission: ${settings.authorizationStatus}');
 
-    // Handle notification when app is opened from terminated state
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       if (message == null) return;
       print('App opened from terminated state with notification');
@@ -40,7 +37,6 @@ class PushNotificationSystem {
       readUserRideRequestInformation(rideRequestId, context);
     });
 
-    // Handle notification when app is in foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('Got a message whilst in the foreground!');
       print('Message data: ${message.data}');
@@ -58,7 +54,6 @@ class PushNotificationSystem {
       readUserRideRequestInformation(rideRequestId, context);
     });
 
-    // Handle notification when app is in background but not terminated
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('App opened from background with notification');
       print('Message data: ${message.data}');
@@ -73,7 +68,6 @@ class PushNotificationSystem {
     });
   }
 
-  /// Read ride request information from Firebase and show dialog
   void readUserRideRequestInformation(
       String rideRequestId, BuildContext context) async {
     try {
@@ -97,16 +91,13 @@ class PushNotificationSystem {
       final data = snap.snapshot.value as Map;
       print('Ride request data loaded successfully');
 
-      // Play notification sound
       try {
         await audioPlayer.setAsset("music/music_notification.mp3");
         audioPlayer.play();
       } catch (e) {
         print('Error playing notification sound: $e');
-        // Continue even if sound fails
       }
 
-      // Create UserRideRequestInfo object
       UserRideRequestInfo userRideRequestInfo = UserRideRequestInfo(
         originLatLng: LatLng(
           double.parse(data["origin"]["latitude"].toString()),
@@ -125,7 +116,6 @@ class PushNotificationSystem {
 
       print('Showing ride request dialog');
 
-      // Show notification dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -143,7 +133,6 @@ class PushNotificationSystem {
     }
   }
 
-  /// Generate FCM token and save to Firebase
   Future<void> generateAndGetToken() async {
     try {
       String? token = await messaging.getToken();
@@ -155,7 +144,6 @@ class PushNotificationSystem {
 
       print('FCM Token: $token');
 
-      // Save token to Firebase
       await FirebaseDatabase.instance
           .ref()
           .child("drivers")
@@ -165,7 +153,6 @@ class PushNotificationSystem {
 
       print('FCM token saved to Firebase');
 
-      // Subscribe to topics
       await messaging.subscribeToTopic("allDrivers");
       await messaging.subscribeToTopic("allUsers");
 
@@ -175,12 +162,10 @@ class PushNotificationSystem {
     }
   }
 
-  /// Handle token refresh
   void onTokenRefresh() {
     messaging.onTokenRefresh.listen((newToken) {
       print('FCM Token refreshed: $newToken');
 
-      // Save new token to Firebase
       FirebaseDatabase.instance
           .ref()
           .child("drivers")
@@ -190,13 +175,11 @@ class PushNotificationSystem {
     });
   }
 
-  /// Delete token (call when driver logs out)
   Future<void> deleteToken() async {
     try {
       await messaging.deleteToken();
       print('FCM token deleted');
 
-      // Remove token from Firebase
       await FirebaseDatabase.instance
           .ref()
           .child("drivers")
@@ -204,7 +187,6 @@ class PushNotificationSystem {
           .child("token")
           .remove();
 
-      // Unsubscribe from topics
       await messaging.unsubscribeFromTopic("allDrivers");
       await messaging.unsubscribeFromTopic("allUsers");
 
