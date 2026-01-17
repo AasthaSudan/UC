@@ -38,7 +38,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
           children: [
             const SizedBox(height: 20),
 
-            // Vehicle icon based on car type
             Image.asset(
               onlineDriverData.car_type == "Car"
                   ? "images/car.png"
@@ -47,7 +46,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
                   : "images/bike.png",
               height: 120,
               errorBuilder: (context, error, stackTrace) {
-                // Fallback icon if image not found
                 return Icon(
                   Icons.directions_car,
                   size: 80,
@@ -82,7 +80,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // Pickup location
                   _locationRow(
                     icon: "images/pickicon.png",
                     fallbackIcon: Icons.location_on,
@@ -93,7 +90,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
 
                   const SizedBox(height: 20),
 
-                  // Drop location
                   _locationRow(
                     icon: "images/desticon.png",
                     fallbackIcon: Icons.location_on,
@@ -112,13 +108,11 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
                   : Colors.blue,
             ),
 
-            // Action buttons
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Cancel button
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -129,7 +123,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
                         ),
                       ),
                       onPressed: () {
-                        // Stop audio
                         audioPlayer.pause();
                         audioPlayer.stop();
                         audioPlayer = AudioPlayer();
@@ -149,7 +142,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
 
                   const SizedBox(width: 16),
 
-                  // Accept button
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -160,7 +152,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
                         ),
                       ),
                       onPressed: () {
-                        // Stop audio
                         audioPlayer.pause();
                         audioPlayer.stop();
                         audioPlayer = AudioPlayer();
@@ -196,7 +187,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Try to load image, fallback to icon
         Image.asset(
           icon,
           height: 30,
@@ -226,7 +216,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
   }
 
   void acceptRideRequest(BuildContext context) async {
-    // Check if driver is idle (not on another ride)
     try {
       final snap = await FirebaseDatabase.instance
           .ref()
@@ -236,7 +225,6 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
           .once();
 
       if (snap.snapshot.value == "idle") {
-        // Update driver status to accepted
         await FirebaseDatabase.instance
             .ref()
             .child("drivers")
@@ -244,24 +232,20 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
             .child("newRideStatus")
             .set("accepted");
 
-        // Pause live location updates
         AssistantMethods.pauseLiveLocationUpdates();
 
-        // Close the dialog
         if (!mounted) return;
         Navigator.pop(context);
 
-        // Navigate to NewRideScreen with ride details
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => NewRideScreen(
-              userRideRequestDetails: widget.userRideRequestInfo, // ✅ Fixed: Pass the ride details
+              userRideRequestDetails: widget.userRideRequestInfo,
             ),
           ),
         );
       } else {
-        // Ride no longer available
         Fluttertoast.showToast(
           msg: "This ride request is no longer available",
           toastLength: Toast.LENGTH_LONG,
