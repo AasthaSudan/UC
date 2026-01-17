@@ -4,7 +4,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,6 +12,7 @@ import '../models/user_ride_request_info.dart';
 import '../info/directions_details_info.dart';
 import '../assistants/assistant_methods.dart';
 import '../global/global.dart';
+import '../widgets/openroute_service.dart';
 
 class NewRideScreen extends StatefulWidget {
   final UserRideRequestInfo? userRideRequestDetails;
@@ -41,7 +41,7 @@ class _NewRideScreenState extends State<NewRideScreen> {
   List<CircleMarker> circles = [];
   List<Polyline> polylines = [];
   List<LatLng> polylinePoints = [];
-  PolylinePoints polylinePointsInstance = PolylinePoints();
+  final OpenRouteService _routeService = OpenRouteService();
 
   Position? currentPosition;
   Position? onlineDriverCurrentPosition;
@@ -74,16 +74,8 @@ class _NewRideScreenState extends State<NewRideScreen> {
 
     // Decode the polyline from OpenRouteService
     print("Got direction details, decoding polyline...");
-    List<PointLatLng> decodedPolyLinePointsResult =
-    polylinePointsInstance.decodePolyline(directionDetailsInfo.e_points!);
-
-    polylinePoints.clear();
-    if (decodedPolyLinePointsResult.isNotEmpty) {
-      for (var pointLatLng in decodedPolyLinePointsResult) {
-        polylinePoints.add(LatLng(pointLatLng.latitude, pointLatLng.longitude));
-      }
-      print("Decoded ${polylinePoints.length} route points");
-    }
+    polylinePoints = _routeService.decodePolyline(directionDetailsInfo.e_points!);
+    print("Decoded ${polylinePoints.length} route points");
 
     polylines.clear();
 
@@ -265,6 +257,7 @@ class _NewRideScreenState extends State<NewRideScreen> {
   @override
   void dispose() {
     streamSubscription?.cancel();
+    _routeService.dispose();
     super.dispose();
   }
 

@@ -281,3 +281,8 @@ class OpenRouteService {
     _dio.close();
   }
 }
+
+// Extension method to add decodePolyline directly to OpenRouteService
+extension PolylineDecoder on OpenRouteService {
+  // Already included in the main class above
+}

@@ -36,6 +36,9 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 20),
+
+            // Vehicle icon based on car type
             Image.asset(
               onlineDriverData.car_type == "Car"
                   ? "images/car.png"
@@ -43,6 +46,14 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
                   ? "images/cng.png"
                   : "images/bike.png",
               height: 120,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback icon if image not found
+                return Icon(
+                  Icons.directions_car,
+                  size: 80,
+                  color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                );
+              },
             ),
 
             const SizedBox(height: 10),
@@ -71,17 +82,23 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
+                  // Pickup location
                   _locationRow(
                     icon: "images/pickicon.png",
-                    text: widget.userRideRequestInfo!.originAddress!,
+                    fallbackIcon: Icons.location_on,
+                    iconColor: Colors.green,
+                    text: widget.userRideRequestInfo?.originAddress ?? "Pickup location",
                     darkTheme: darkTheme,
                   ),
 
                   const SizedBox(height: 20),
 
+                  // Drop location
                   _locationRow(
                     icon: "images/desticon.png",
-                    text: widget.userRideRequestInfo!.destinationAddress!,
+                    fallbackIcon: Icons.location_on,
+                    iconColor: Colors.red,
+                    text: widget.userRideRequestInfo?.destinationAddress ?? "Drop location",
                     darkTheme: darkTheme,
                   ),
                 ],
@@ -95,37 +112,70 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
                   : Colors.blue,
             ),
 
+            // Action buttons
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                  // Cancel button
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () {
+                        // Stop audio
+                        audioPlayer.pause();
+                        audioPlayer.stop();
+                        audioPlayer = AudioPlayer();
+
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
+                        "CANCEL",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
-                    onPressed: () {
-                      audioPlayer.pause();
-                      audioPlayer.stop();
-                      audioPlayer=AudioPlayer();
-                      Navigator.pop(context);
-                    },
-                    child: const Text("CANCEL"),
                   ),
 
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 16),
 
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                  // Accept button
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () {
+                        // Stop audio
+                        audioPlayer.pause();
+                        audioPlayer.stop();
+                        audioPlayer = AudioPlayer();
+
+                        acceptRideRequest(context);
+                      },
+                      child: const Text(
+                        "ACCEPT",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
-                    onPressed: () {
-                      audioPlayer.pause();
-                      audioPlayer.stop();
-                      audioPlayer=AudioPlayer();
-                      acceptRideRequest(context);
-                    },
-                    child: const Text("ACCEPT"),
                   ),
                 ],
               ),
@@ -138,56 +188,98 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
 
   Widget _locationRow({
     required String icon,
+    required IconData fallbackIcon,
+    required Color iconColor,
     required String text,
     required bool darkTheme,
   }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Image.asset(icon, height: 30, width: 30),
-        const SizedBox(width: 10),
+        // Try to load image, fallback to icon
+        Image.asset(
+          icon,
+          height: 30,
+          width: 30,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              fallbackIcon,
+              color: iconColor,
+              size: 30,
+            );
+          },
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
               fontSize: 16,
-              color: darkTheme
-                  ? Colors.amber.shade400
-                  : Colors.blue,
+              color: darkTheme ? Colors.white : Colors.black87,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
     );
   }
 
-  void acceptRideRequest(BuildContext context) {
-    FirebaseDatabase.instance
-        .ref()
-        .child("drivers")
-        .child(firebaseAuth.currentUser!.uid)
-        .child("newRideStatus")
-        .once()
-        .then((snap) {
+  void acceptRideRequest(BuildContext context) async {
+    // Check if driver is idle (not on another ride)
+    try {
+      final snap = await FirebaseDatabase.instance
+          .ref()
+          .child("drivers")
+          .child(firebaseAuth.currentUser!.uid)
+          .child("newRideStatus")
+          .once();
+
       if (snap.snapshot.value == "idle") {
-        FirebaseDatabase.instance
+        // Update driver status to accepted
+        await FirebaseDatabase.instance
             .ref()
             .child("drivers")
             .child(firebaseAuth.currentUser!.uid)
             .child("newRideStatus")
             .set("accepted");
 
+        // Pause live location updates
         AssistantMethods.pauseLiveLocationUpdates();
 
+        // Close the dialog
+        if (!mounted) return;
+        Navigator.pop(context);
+
+        // Navigate to NewRideScreen with ride details
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => NewRideScreen(),
+            builder: (_) => NewRideScreen(
+              userRideRequestDetails: widget.userRideRequestInfo, // ✅ Fixed: Pass the ride details
+            ),
           ),
         );
       } else {
+        // Ride no longer available
         Fluttertoast.showToast(
-            msg: "This ride request is no longer available");
+          msg: "This ride request is no longer available",
+          toastLength: Toast.LENGTH_LONG,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+
+        if (!mounted) return;
+        Navigator.pop(context);
       }
-    });
+    } catch (e) {
+      print("Error accepting ride: $e");
+      Fluttertoast.showToast(
+        msg: "Error accepting ride: $e",
+        toastLength: Toast.LENGTH_LONG,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
   }
 }
