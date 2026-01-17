@@ -104,7 +104,12 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      audioPlayer.pause();
+                      audioPlayer.stop();
+                      audioPlayer=AudioPlayer();
+                      Navigator.pop(context);
+                    },
                     child: const Text("CANCEL"),
                   ),
 
@@ -115,7 +120,9 @@ class _NotificationDialogBoxState extends State<NotificationDialogBox> {
                       backgroundColor: Colors.green,
                     ),
                     onPressed: () {
+                      audioPlayer.pause();
                       audioPlayer.stop();
+                      audioPlayer=AudioPlayer();
                       acceptRideRequest(context);
                     },
                     child: const Text("ACCEPT"),

@@ -1555,7 +1555,7 @@ class _MainScreenState extends State<MainScreen> {
                                           height: 55,
                                           alignment: Alignment.center,
                                           child: Image.asset(
-                                            "assets/images/img_4.png",
+                                            "assets/images/img_7.png",
                                             fit: BoxFit.contain,
                                           ),
                                         ),
@@ -1574,7 +1574,7 @@ class _MainScreenState extends State<MainScreen> {
                                         Text(
                                           tripDirectionDetailsInfo != null
                                               ? "₹${((AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 2) * 107).toStringAsFixed(0)}"
-                                              : "---",
+                                              : "null",
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
@@ -1614,7 +1614,7 @@ class _MainScreenState extends State<MainScreen> {
                                           height: 55,
                                           alignment: Alignment.center,
                                           child: Image.asset(
-                                            "assets/images/img_5.png",
+                                            "assets/images/img_8.png",
                                             fit: BoxFit.contain,
                                           ),
                                         ),
@@ -1633,7 +1633,7 @@ class _MainScreenState extends State<MainScreen> {
                                         Text(
                                           tripDirectionDetailsInfo != null
                                               ? "₹${((AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 1.5) * 107).toStringAsFixed(0)}"
-                                              : "---",
+                                              : "null",
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
@@ -1673,7 +1673,7 @@ class _MainScreenState extends State<MainScreen> {
                                           height: 55,
                                           alignment: Alignment.center,
                                           child: Image.asset(
-                                            "assets/images/img_6.png",
+                                            "assets/images/img_9.png",
                                             fit: BoxFit.contain,
                                           ),
                                         ),
@@ -1692,7 +1692,7 @@ class _MainScreenState extends State<MainScreen> {
                                         Text(
                                           tripDirectionDetailsInfo != null
                                               ? "₹${((AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 0.8) * 107).toStringAsFixed(0)}"
-                                              : "---",
+                                              : "null",
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
@@ -1880,47 +1880,56 @@ class _MainScreenState extends State<MainScreen> {
                                       driverName,
                                       style: const TextStyle(fontWeight: FontWeight.bold),
                                     ),
-                                    const SizedBox(height: 5),
-                                    const Text(
-                                      "4.5 ⭐",
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.star,
+                                          color: Colors.orange,
+                                        ),
+                                     SizedBox(width: 5),
+                                     Text(
+                                      "4.5",
                                       style: TextStyle(color: Colors.grey),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
+                            ],
+                            ),
 
                             Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Image.asset(
-                                  "assets/images/img_4.png",
-                                  scale: 3.5,
+                                  "assets/images/img_7.png",
+                                  scale: 3,
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
                                   driverCarDetails,
-                                  style: const TextStyle(fontSize: 11),
+                                  style: const TextStyle(fontSize: 12),
                                 ),
                               ],
                             ),
                           ],
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 5),
+                        Divider(
+                          thickness: 1,
+                          color: darkTheme ? Colors.grey : Colors.grey[300],
+                        ),
 
                         ElevatedButton.icon(
-                          onPressed: userRideRequestStatus == "accepted" ||
-                              userRideRequestStatus == "arrived" ||
-                              userRideRequestStatus == "onTrip"
-                              ? () {
-                            _makePhoneCall(driverPhone);
-                          }
-                              : null,
+                          onPressed: () {
+                            _makePhoneCall("tel: ${driverPhone}");
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: darkTheme ? Colors.amber.shade400 : Colors.blue,
-                            disabledBackgroundColor: Colors.grey,
-                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            // disabledBackgroundColor: Colors.grey,
+                            // padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           ),
                           icon: Icon(
                             Icons.phone,

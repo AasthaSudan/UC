@@ -4,553 +4,732 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
+
+// Import your models and helpers
 import '../models/user_ride_request_info.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../info/app_info.dart';
 import '../info/directions_details_info.dart';
 import '../assistants/assistant_methods.dart';
+import '../global/global.dart';
 
 class NewRideScreen extends StatefulWidget {
-  const NewRideScreen({super.key});
+  final UserRideRequestInfo? userRideRequestDetails;
+
+  const NewRideScreen({
+    super.key,
+    required this.userRideRequestDetails,
+  });
 
   @override
   State<NewRideScreen> createState() => _NewRideScreenState();
 }
 
 class _NewRideScreenState extends State<NewRideScreen> {
+  final MapController mapController = MapController();
+
+  String buttonTitle = "Arrived";
+  Color buttonColor = Colors.green;
+
+  static const LatLng _initialLocation = LatLng(28.6139, 77.2090);
+  static const LatLng _southWestBound = LatLng(6.5546, 68.1113);
+  static const LatLng _northEastBound = LatLng(35.6745, 97.3953);
+  static final LatLngBounds _indiaBounds = LatLngBounds(_southWestBound, _northEastBound);
+
+  List<Marker> markers = [];
+  List<CircleMarker> circles = [];
+  List<Polyline> polylines = [];
+  List<LatLng> polylinePoints = [];
+  PolylinePoints polylinePointsInstance = PolylinePoints();
+
+  Position? currentPosition;
+  Position? onlineDriverCurrentPosition;
+  String rideRequestStatus = "accepted";
+  String durationFromOriginToDestination = "";
+  bool isRequestingDirection = false;
+  StreamSubscription<Position>? streamSubscription;
+
+  Future<void> drawPolyLineFromOriginToDestination(
+      LatLng originLatLng, LatLng destinationLatLng, bool darkTheme) async {
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    var directionDetailsInfo = await AssistantMethods.obtainOriginToDestinationDirectionDetails(
+        originLatLng, destinationLatLng);
+
+    if (!mounted) return;
+    Navigator.pop(context);
+
+    if (directionDetailsInfo == null) {
+      Fluttertoast.showToast(msg: "Could not get directions");
+      return;
+    }
+
+    // Decode the polyline from OpenRouteService
+    print("Got direction details, decoding polyline...");
+    List<PointLatLng> decodedPolyLinePointsResult =
+    polylinePointsInstance.decodePolyline(directionDetailsInfo.e_points!);
+
+    polylinePoints.clear();
+    if (decodedPolyLinePointsResult.isNotEmpty) {
+      for (var pointLatLng in decodedPolyLinePointsResult) {
+        polylinePoints.add(LatLng(pointLatLng.latitude, pointLatLng.longitude));
+      }
+      print("Decoded ${polylinePoints.length} route points");
+    }
+
+    polylines.clear();
+
+    setState(() {
+      Polyline polyline = Polyline(
+        points: polylinePoints,
+        color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+        strokeWidth: 5.0,
+      );
+      polylines.add(polyline);
+    });
+
+    // Calculate bounds
+    LatLngBounds bounds = LatLngBounds.fromPoints([originLatLng, destinationLatLng]);
+
+    // Animate camera to fit bounds
+    mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.all(50),
+      ),
+    );
+
+    // Add markers
+    Marker originMarker = Marker(
+      point: originLatLng,
+      width: 80,
+      height: 80,
+      child: const Icon(
+        Icons.location_on,
+        color: Colors.green,
+        size: 45,
+      ),
+    );
+
+    Marker destinationMarker = Marker(
+      point: destinationLatLng,
+      width: 80,
+      height: 80,
+      child: const Icon(
+        Icons.location_on,
+        color: Colors.red,
+        size: 45,
+      ),
+    );
+
+    // Add circles
+    CircleMarker originCircle = CircleMarker(
+      point: originLatLng,
+      color: Colors.greenAccent.withOpacity(0.3),
+      borderColor: Colors.green,
+      borderStrokeWidth: 3,
+      radius: 12,
+    );
+
+    CircleMarker destinationCircle = CircleMarker(
+      point: destinationLatLng,
+      color: Colors.redAccent.withOpacity(0.3),
+      borderColor: Colors.red,
+      borderStrokeWidth: 3,
+      radius: 12,
+    );
+
+    setState(() {
+      markers.clear();
+      markers.add(originMarker);
+      markers.add(destinationMarker);
+
+      circles.clear();
+      circles.add(originCircle);
+      circles.add(destinationCircle);
+    });
+  }
+
+  getDriverLocationUpdatesAtRealTime() async {
+    streamSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position position) {
+      currentPosition = position;
+      onlineDriverCurrentPosition = position;
+
+      LatLng latLngLiveDriverPosition = LatLng(
+        onlineDriverCurrentPosition!.latitude,
+        onlineDriverCurrentPosition!.longitude,
+      );
+
+      // Create driver marker
+      Marker liveDriverMarker = Marker(
+        point: latLngLiveDriverPosition,
+        width: 80,
+        height: 80,
+        child: const Icon(
+          Icons.directions_car,
+          color: Colors.blue,
+          size: 45,
+        ),
+      );
+
+      setState(() {
+        // Move camera to driver's position
+        mapController.move(latLngLiveDriverPosition, 16);
+
+        // Update driver marker - keep origin and destination markers
+        markers.removeWhere((marker) =>
+        marker.child is Icon && (marker.child as Icon).icon == Icons.directions_car
+        );
+        markers.add(liveDriverMarker);
+      });
+
+      updateDurationTimeAtRealTime();
+
+      // Update driver location in Firebase
+      Map<String, String> driverLatLngMap = {
+        "latitude": onlineDriverCurrentPosition!.latitude.toString(),
+        "longitude": onlineDriverCurrentPosition!.longitude.toString(),
+      };
+
+      FirebaseDatabase.instance
+          .ref()
+          .child("All Ride Requests")
+          .child(widget.userRideRequestDetails!.rideRequestId!)
+          .child("driver_location")
+          .set(driverLatLngMap);
+    });
+  }
+
+  updateDurationTimeAtRealTime() async {
+    if (isRequestingDirection == false) {
+      isRequestingDirection = true;
+
+      if (onlineDriverCurrentPosition == null) {
+        isRequestingDirection = false;
+        return;
+      }
+
+      var originLatLng = LatLng(
+        onlineDriverCurrentPosition!.latitude,
+        onlineDriverCurrentPosition!.longitude,
+      );
+
+      LatLng? destinationLatLng;
+
+      if (rideRequestStatus == "accepted") {
+        destinationLatLng = widget.userRideRequestDetails!.originLatLng;
+      } else {
+        destinationLatLng = widget.userRideRequestDetails!.destinationLatLng;
+      }
+
+      if (destinationLatLng == null) {
+        isRequestingDirection = false;
+        return;
+      }
+
+      var directionDetailsInfo = await AssistantMethods
+          .obtainOriginToDestinationDirectionDetails(
+        originLatLng,
+        destinationLatLng,
+      );
+
+      if (directionDetailsInfo != null) {
+        setState(() {
+          durationFromOriginToDestination = directionDetailsInfo.duration_text!;
+        });
+      }
+
+      isRequestingDirection = false;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    saveAssignedDriverInfo();
+  }
+
+  @override
+  void dispose() {
+    streamSubscription?.cancel();
+    super.dispose();
+  }
+
+  saveAssignedDriverInfo() async {
+    // Get current location first
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      currentPosition = position;
+      onlineDriverCurrentPosition = position;
+
+      DatabaseReference databaseReference = FirebaseDatabase.instance
+          .ref()
+          .child("All Ride Requests")
+          .child(widget.userRideRequestDetails!.rideRequestId!);
+
+      // Check if ride is still available
+      DataSnapshot snapshot = await databaseReference.child("driverId").get();
+
+      if (snapshot.value == null || snapshot.value == "waiting") {
+        Map<String, String> driverInfoMap = {
+          "latitude": currentPosition!.latitude.toString(),
+          "longitude": currentPosition!.longitude.toString(),
+        };
+
+        // Update all driver info
+        await databaseReference.child("driverId").set(onlineDriverData.id);
+        await databaseReference.child("driver_name").set(onlineDriverData.name);
+        await databaseReference.child("driver_phone").set(onlineDriverData.phone);
+        await databaseReference.child("ratings").set(onlineDriverData.ratings);
+        await databaseReference.child("car_details").set(
+            "${onlineDriverData.car_color} ${onlineDriverData.car_model} - ${onlineDriverData.car_number}"
+        );
+        await databaseReference.child("driver_location").set(driverInfoMap);
+        await databaseReference.child("status").set("accepted");
+
+        saveRideRequestIdToDriverHistory();
+
+        // Initialize map and tracking
+        if (mounted) {
+          bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
+          var driverCurrentLatLng = LatLng(currentPosition!.latitude, currentPosition!.longitude);
+          var userPickUpLatLng = widget.userRideRequestDetails!.originLatLng;
+
+          if (userPickUpLatLng != null) {
+            await drawPolyLineFromOriginToDestination(
+                driverCurrentLatLng,
+                userPickUpLatLng,
+                darkTheme
+            );
+          }
+          getDriverLocationUpdatesAtRealTime();
+        }
+      } else {
+        Fluttertoast.showToast(
+          msg: "This ride request has already been accepted by another driver.\nPlease try again later.",
+        );
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      print("Error in saveAssignedDriverInfo: $e");
+      Fluttertoast.showToast(msg: "Error getting location: $e");
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  saveRideRequestIdToDriverHistory() async {
+    DatabaseReference ref = FirebaseDatabase.instance
+        .ref()
+        .child("drivers")
+        .child(firebaseAuth.currentUser!.uid)
+        .child("history");
+
+    ref.child(widget.userRideRequestDetails!.rideRequestId!).set(true);
+  }
+
+  endTripNow() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    var currentDriverPositionLatLng = LatLng(
+      onlineDriverCurrentPosition!.latitude,
+      onlineDriverCurrentPosition!.longitude,
+    );
+
+    var tripDirectionDetails = await AssistantMethods.obtainOriginToDestinationDirectionDetails(
+      widget.userRideRequestDetails!.originLatLng!,
+      currentDriverPositionLatLng,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context);
+
+    if (tripDirectionDetails == null) {
+      Fluttertoast.showToast(msg: "Error calculating fare");
+      return;
+    }
+
+    double totalFareAmount = AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetails);
+
+    await FirebaseDatabase.instance
+        .ref()
+        .child("All Ride Requests")
+        .child(widget.userRideRequestDetails!.rideRequestId!)
+        .child("fareAmount")
+        .set(totalFareAmount.toString());
+
+    await FirebaseDatabase.instance
+        .ref()
+        .child("All Ride Requests")
+        .child(widget.userRideRequestDetails!.rideRequestId!)
+        .child("status")
+        .set("ended");
+
+    streamSubscription?.cancel();
+
+    // Show fare dialog
+    if (mounted) {
+      bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => AlertDialog(
+          backgroundColor: darkTheme ? Colors.black : Colors.white,
+          title: Text(
+            "Trip Completed!",
+            style: TextStyle(
+              color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Total Fare Amount",
+                style: TextStyle(
+                  color: darkTheme ? Colors.white70 : Colors.black54,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "₹${totalFareAmount.toStringAsFixed(0)}",
+                style: TextStyle(
+                  color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: Text(
+                "Collect Cash",
+                style: TextStyle(
+                  color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    saveFareAmountToDriverEarnings(totalFareAmount);
+  }
+
+  saveFareAmountToDriverEarnings(double totalFareAmount) async {
+    DatabaseReference earningsRef = FirebaseDatabase.instance
+        .ref()
+        .child("drivers")
+        .child(firebaseAuth.currentUser!.uid)
+        .child("earnings");
+
+    DataSnapshot snapshot = await earningsRef.get();
+
+    if (snapshot.value != null) {
+      double oldEarnings = double.parse(snapshot.value.toString());
+      double driverTotalEarnings = oldEarnings + totalFareAmount;
+      await earningsRef.set(driverTotalEarnings.toStringAsFixed(2));
+    } else {
+      await earningsRef.set(totalFareAmount.toStringAsFixed(2));
+    }
+  }
+
+  // Make phone call to user
+  Future<void> makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      Fluttertoast.showToast(msg: "Could not launch phone dialer");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          FlutterMap(
+            mapController: mapController,
+            options: MapOptions(
+              initialCenter: widget.userRideRequestDetails?.originLatLng ?? _initialLocation,
+              initialZoom: 15.0,
+              minZoom: 5.0,
+              maxZoom: 18.0,
+              cameraConstraint: CameraConstraint.contain(
+                bounds: _indiaBounds,
+              ),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
+              ),
+              PolylineLayer(polylines: polylines),
+              CircleLayer(circles: circles),
+              MarkerLayer(markers: markers),
+            ],
+          ),
+
+          // Bottom info card
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              margin: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: darkTheme ? Colors.black : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: darkTheme ? Colors.grey.shade800 : Colors.grey.shade300,
+                    spreadRadius: 0.5,
+                    blurRadius: 16,
+                    offset: const Offset(0.6, 0.6),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Duration display
+                    Text(
+                      durationFromOriginToDestination.isNotEmpty
+                          ? durationFromOriginToDestination
+                          : "Calculating...",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Divider(
+                      thickness: 1,
+                      color: darkTheme ? Colors.amber.shade400 : Colors.grey,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // User name and phone
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.userRideRequestDetails?.userName ?? "User",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: darkTheme ? Colors.amber.shade400 : Colors.black,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            if (widget.userRideRequestDetails?.userPhone != null) {
+                              makePhoneCall(widget.userRideRequestDetails!.userPhone!);
+                            } else {
+                              Fluttertoast.showToast(msg: "Phone number not available");
+                            }
+                          },
+                          icon: Icon(
+                            Icons.phone,
+                            color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                            size: 28,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Pickup location
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: Colors.green,
+                          size: 30,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.userRideRequestDetails?.originAddress ?? "Pickup location",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: darkTheme ? Colors.white : Colors.black,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Drop location
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: Colors.red,
+                          size: 30,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.userRideRequestDetails?.destinationAddress ?? "Drop location",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: darkTheme ? Colors.white : Colors.black,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+
+                    Divider(
+                      thickness: 1,
+                      color: darkTheme ? Colors.amber.shade400 : Colors.grey,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Action button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          if (rideRequestStatus == "accepted") {
+                            setState(() {
+                              rideRequestStatus = "arrived";
+                              buttonTitle = "Start Trip";
+                              buttonColor = Colors.green;
+                            });
+
+                            await FirebaseDatabase.instance
+                                .ref()
+                                .child("All Ride Requests")
+                                .child(widget.userRideRequestDetails!.rideRequestId!)
+                                .child("status")
+                                .set(rideRequestStatus);
+
+                            if (!mounted) return;
+
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (BuildContext context) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+
+                            if (widget.userRideRequestDetails!.originLatLng != null &&
+                                widget.userRideRequestDetails!.destinationLatLng != null) {
+                              await drawPolyLineFromOriginToDestination(
+                                widget.userRideRequestDetails!.originLatLng!,
+                                widget.userRideRequestDetails!.destinationLatLng!,
+                                darkTheme,
+                              );
+                            }
+
+                            if (mounted) Navigator.pop(context);
+                          }
+                          else if (rideRequestStatus == "arrived") {
+                            setState(() {
+                              rideRequestStatus = "onTrip";
+                              buttonTitle = "End Trip";
+                              buttonColor = Colors.red;
+                            });
+
+                            await FirebaseDatabase.instance
+                                .ref()
+                                .child("All Ride Requests")
+                                .child(widget.userRideRequestDetails!.rideRequestId!)
+                                .child("status")
+                                .set(rideRequestStatus);
+                          }
+                          else if (rideRequestStatus == "onTrip") {
+                            endTripNow();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: buttonColor,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        icon: Icon(
+                          Icons.directions_car,
+                          color: darkTheme ? Colors.black : Colors.white,
+                          size: 25,
+                        ),
+                        label: Text(
+                          buttonTitle,
+                          style: TextStyle(
+                            color: darkTheme ? Colors.black : Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
-
-
-// class NewRideScreen extends StatefulWidget {
-//   const NewRideScreen({super.key});
-//
-//   @override
-//   State<NewRideScreen> createState() => _NewRideScreenState();
-// }
-//
-// class _NewRideScreenState extends State<NewRideScreen> {
-//   LatLng? pickLocation;
-//   String? _address;
-//   final MapController mapController = MapController();
-//
-//   String? buttonTitle="Arrived";
-//   Color? buttonColor=Colors.green;
-//
-//
-//   static const LatLng _initialLocation = LatLng(28.6139, 77.2090);
-//   static const LatLng _southWestBound = LatLng(6.5546, 68.1113);
-//   static const LatLng _northEastBound = LatLng(35.6745, 97.3953);
-//   static final LatLngBounds _indiaBounds = LatLngBounds(_southWestBound, _northEastBound);
-//
-//   Set<Marker> markers = Set<Marker>();
-//   Set<Circle> circles = Set<Circle>();
-//   Set<Polyline> polyLines = Set<Polyline>();
-//   List<LatLng> polylinePoints = [];
-//   PolylinePoints polylinePointsInstance = PolylinePoints();
-//   double mapPadding = 0;
-//   BitmapDescriptor? carIcon;
-//   Position? currentPosition;
-//   String rideRequestStatus = "accepted";
-//   String durationFromOriginToDestination = "";
-//   bool isRequestingDirection = false;
-//
-//   Future<void> drawPolyLineFromOriginToDestination(
-//       LatLng driverCurrentLatLng, LatLng userPickUpLatLng, bool darkTheme) async {
-//     showDialog(
-//       context: context,
-//       builder: (BuildContext context) => const Center(child: CircularProgressIndicator()),
-//     );
-//
-//     var directionDetailsInfo = await AssistantMethods.obtainOriginToDestinationDirectionDetails(
-//         userPickUpLatLng, driverCurrentLatLng);
-//
-//     Navigator.pop(context);
-//
-//     List<PointLatLng> decodedPolyLinePointsResult = polylinePointsInstance.decodePolyline(directionDetailsInfo.e_points!);
-//
-//     polylinePoints.clear();
-//     if (decodedPolyLinePointsResult.isNotEmpty) {
-//       decodedPolyLinePointsResult.forEach((PointLatLng pointLatLng) {
-//         polylinePoints.add(LatLng(pointLatLng.latitude, pointLatLng.longitude));
-//       });
-//     }
-//
-//     polyLines.clear();
-//
-//     setState(() {
-//       Polyline polyline = Polyline(
-//         color: darkTheme ? Colors.amber.shade400 : Colors.blue,
-//         polylineId: PolylineId("PolylineID"),
-//         points: polylinePoints,
-//         width: 5,
-//         jointType: JointType.round,
-//         startCap: Cap.roundCap,
-//         endCap: Cap.roundCap,
-//         geodesic: true,
-//       );
-//       polyLines.add(polyline);
-//     });
-//
-//     LatLngBounds bounds;
-//     if (userPickUpLatLng.latitude > driverCurrentLatLng.latitude &&
-//         userPickUpLatLng.longitude > driverCurrentLatLng.longitude) {
-//       bounds = LatLngBounds(southwest: driverCurrentLatLng, northeast: userPickUpLatLng);
-//     } else if (userPickUpLatLng.longitude > driverCurrentLatLng.longitude) {
-//       bounds = LatLngBounds(
-//         southwest: LatLng(userPickUpLatLng.latitude, driverCurrentLatLng.longitude),
-//         northeast: LatLng(driverCurrentLatLng.latitude, userPickUpLatLng.longitude),
-//       );
-//     } else if (userPickUpLatLng.latitude > driverCurrentLatLng.latitude) {
-//       bounds = LatLngBounds(
-//         southwest: LatLng(driverCurrentLatLng.latitude, userPickUpLatLng.longitude),
-//         northeast: LatLng(userPickUpLatLng.latitude, driverCurrentLatLng.longitude),
-//       );
-//     } else {
-//       bounds = LatLngBounds(southwest: userPickUpLatLng, northeast: driverCurrentLatLng);
-//     }
-//
-//     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 65));
-//
-//     Marker originMarker=Marker(
-//       markerId: MarkerId("originID"),
-//       position: userPickUpLatLng,
-//       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-//     );
-//
-//     Marker destinationMarker=Marker(
-//       markerId: MarkerId("destinationID"),
-//       position: driverCurrentLatLng,
-//       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-//     );
-//     setState(() {
-//       markers.add(originMarker);
-//       markers.add(destinationMarker);
-//     });
-//
-//
-//     Circle originCircle = Circle(
-//       circleId: CircleId("originID"),
-//       strokeColor: Colors.green,
-//       strokeWidth: 3,
-//       radius: 12,
-//       fillColor: Colors.greenAccent,
-//       center: originLatLng,
-//     );
-//
-//     Circle destinationCircle = Circle(
-//       circleId: CircleId("destinationID"),
-//       strokeColor: Colors.red,
-//       strokeWidth: 3,
-//       radius: 12,
-//       fillColor: Colors.redAccent,
-//       center: destinationLatLng,
-//     );
-//
-//     setState(() {
-//       circles.add(originCircle);
-//       circles.add(destinationCircle);
-//     });
-//   }
-//
-//   getDriverLocationUpdatesAtRealTime() async {
-//     LatLng oldLatLng = LatLng(0, 0);
-//
-//     streamSubscription = Geolocator.getPositionStream().listen((Position position) {
-//       currentPosition = position;
-//       onlineDriverCurrentPosition = position;
-//
-//       LatLng latLngLiveDriverPosition = LatLng(onlineDriverCurrentPosition!.latitude, onlineDriverCurrentPosition!.longitude);
-//
-//       Marker liveDriverMarker = Marker(
-//         markerId: MarkerId("liveDriver"),
-//         position: latLngLiveDriverPosition,
-//         icon: iconAnimatedMarker!,
-//         infoWindow: InfoWindow(
-//           title: "Current Location",
-//         ),
-//       );
-//
-//       setState(() {
-//         CameraPosition cameraPosition = CameraPosition(target: latLngLiveDriverPosition, zoom: 18);
-//         mapController.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
-//
-//         markers.removeWhere((marker) => marker.markerId.value == "liveDriver");
-//         markers.add(liveDriverMarker);
-//
-//       });
-//
-//       oldLatLng = latLngLiveDriverPosition;
-//       updateDriversLocationAtRealTime();
-//
-//       Map driverLatLngMap = {
-//         "latitude": onlineDriverCurrentPosition!.latitude.toString(),
-//         "longitude": onlineDriverCurrentPosition!.longitude.toString(),
-//       };
-//
-//       FirebaseDatabase.instance.ref().child("All Ride Requests").child(widget.userRideRequestDetails!.rideRequestId!).child("driver_location").set(driverLatLngMap);
-//
-//     });
-//   }
-//
-//   updateDurationTimeAtRealTime() async {
-//     if(isRequestingDirection == false) {
-//       isRequestingDirection = true;
-//
-//       if (onlineDriverCurrentPosition == null) {
-//         return;
-//       }
-//
-//       var originLatLng = LatLng(
-//         onlineDriverCurrentPosition!.latitude,
-//         onlineDriverCurrentPosition!.longitude,
-//       );
-//
-//       var destinationLatLng;
-//
-//       if (rideRequestStatus == "accepted") {
-//         destinationLatLng = widget.userRideRequestDetails!.originLatLng;
-//       }
-//       else {
-//         destinationLatLng = widget.userRideRequestDetails!.destinationLatLng;
-//       }
-//
-//       var directionDetailsInfo = await AssistantMethods
-//           .obtainOriginToDestinationDirectionDetails(
-//         originLatLng,
-//         destinationLatLng,
-//       );
-//
-//       if (directionDetailsInfo != null) {
-//         setState(() {
-//           durationFromOriginToDestination = directionDetailsInfo.duration_text!;
-//         });
-//       }
-//
-//       isRequestingDirection = false;
-//     }
-//   }
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     saveAssignedDriverInfo();
-//   }
-//
-//   saveAssignedDriverInfo() async {
-//     DatabaseReference ref = FirebaseDatabase.instance.ref().child("All Ride Requests").child(widget.userRideRequestDetails!.rideRequestId!);
-//     Map driverInfoMap = {
-//       "latitude": currentPosition!.latitude.toString(),
-//       "longitude": currentPosition!.longitude.toString(),
-//     };
-//
-//     if(databaseReference.child("driverId")!="waiting") {
-//       databaseReference.child("driverId").set(onlineDriverData.id);
-//       databaseReference.child("driver_name").set(onlineDriverData.name);
-//       databaseReference.child("driver_phone").set(onlineDriverData.phone);
-//       databaseReference.child("ratings").set(onlineDriverData.ratings);
-//       databaseReference.child("car_details").set(onlineDriverData.carDetails);
-//       databaseReference.child("driver_location").set(driverInfoMap);
-//       databaseReference.child("status").set("accepted");
-//
-//       saveRideRequestIdToDriverHistory();
-//     }
-//     else {
-//       Fluttertoast.showToast(msg: "This ride request has already been accepted by another driver.\n Please try again later.");
-//       Navigator.push(context, MaterialPageRoute(builder: (context) => SplashScreen()));
-//     }
-//   }
-//
-//   saveRideRequestIIdToDriverHistory() async {
-//     DatabaseReference ref = FirebaseDatabase.instance.ref().child("Drivers").child(firebaseAuth.currentUser!.uid).child("history");
-//     ref.child(widget.userRideRequestDetails!.rideRequestId!).set(true);
-//
-//
-//     }
-//   }
-//
-//   createCarIconMarker() {
-//     if(carIcon == null) {
-//       ImageConfiguration imageConfiguration = createLocalImageConfiguration(context, size: Size(2,2),
-//           BitmapDescriptor.fromAssetImage(
-//               ImageConfiguration(),
-//               "assets/images/car.png"
-//           ).then((value) {
-//         carIcon = value;
-//       });
-//     }
-//   }
-//
-// endTripNow() {
-//   showDialog(
-//     context: context,
-//     builder: (BuildContext context) => ProgressDialog(
-//       message: "Please wait...",
-//     ),
-//   );
-//
-//   var currentDriverPositionLatLng = LatLng(
-//     onlineDriverCurrentPosition!.latitude,
-//     onlineDriverCurrentPosition!.longitude,
-//   );
-//
-//   var tripDirectionDetails = await AssistantMethods.obtainOriginToDestinationDirectionDetails(
-//     widget.userRideRequestDetails!.originLatLng!,
-//   );
-//
-//   double totalFareAmount=AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetails);
-//
-//   FirebaseDatabase.instance.ref().child("All Ride Requests").child(widget.userRideRequestDetails!.rideRequestId!).child("fareAmount").set(totalFareAmount.toString());
-//   FirebaseDatabase.instance.ref().child("All Ride Requests").child(widget.userRideRequestDetails!.rideRequestId!).child("status").set("ended");
-//
-//   Navigator.pop(context);
-//
-//   showDialog(
-//     context: context,
-//       builder: (BuildContext context) => FareAmountCollectionDialog(
-//         totalFareAmount: totalFareAmount,
-//       ),
-//     );
-//
-//     saveFareAmountToDriverEarnings(totalFareAmount);
-// }
-//
-//   saveFareAmountToDriverEarnings(double totalFareAmount) async {
-//     FirebaseDatabase.instance.ref().child("Drivers").child(firebaseAuth.currentUser!.uid).child("earnings").once().then((snap) {
-//       if(snap.snapshot.value != null) {
-//         double oldEarnings = double.parse(snap.snapshot.value.toString());
-//         double driverTotalEarnings = oldEarnings + totalFareAmount;
-//
-//         FirebaseDatabase.instance.ref().child("Drivers").child(
-//             firebaseAuth.currentUser!.uid).child("earnings").set(
-//             driverTotalEarnings.toStringAsFixed(2));
-//       }
-//       else {
-//         FirebaseDatabase.instance.ref().child("Drivers").child(
-//             firebaseAuth.currentUser!.uid).child("earnings").set(totalFareAmount.toStringAsFixed(2));
-//       }
-//     });
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
-//
-//     return Scaffold(
-//       body: Stack(
-//         children: [
-//           FlutterMap(
-//             options: MapOptions(
-//               center: pickLocation ?? _initialLocation,
-//               zoom: 15.0,
-//             ),
-//             mapController: mapController,
-//             children: [
-//               TileLayer(
-//                 urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-//                 subdomains: ['a', 'b', 'c'],
-//               ),
-//               MarkerLayer(markers: markers.toList()),
-//               CircleLayer(circles: circles.toList()),
-//               PolylineLayer(polylines: polyLines.toList()),
-//             ],
-//           ),
-//
-//           var driverCurrentLatLng=Latlng(driverCurrentPosition!.latitude, driverCurrentPosition!.longitude);
-//           var userPickUpLatLng=widget.userRideRequestDetails!.originLatLng;
-//           drawPolyLineFromOriginToDestination(driverCurrentLatLng, userPickUpLatLng!, darkTheme);
-//           getDriverLocationUpdatesAtRealTime();
-//           updateDurationTimeAtRealTime();
-//           createCarIconMarker();
-//   },
-//
-//
-//           Positioned(
-//             bottom: 0,
-//             left: 0,
-//             right: 0,
-//             child: Padding(
-//               padding: const EdgeInsets.all(10),
-//               child: Container(
-//                 decoration: BoxDecoration(
-//                   color: darkTheme ? Colors.black : Colors.white,
-//                   borderRadius: BorderRadius.circular(20),
-//                   boxShadow: [
-//                     BoxShadow(
-//                       color: Colors.white,
-//                       spreadRadius: 0.5,
-//                       blurRadius: 18,
-//                       offset: Offset(0.6, 0.6),
-//                     ),
-//                   ],
-//                 ),
-//                 child: Padding(
-//                   padding: const EdgeInsets.all(10),
-//                   child: Column(
-//                     children: [
-//                       Text(
-//                         durationFromOriginToDestination,
-//                         style: TextStyle(
-//                           fontSize: 16,
-//                           fontWeight: FontWeight.bold,
-//                           color: darkTheme ? Colors.amber.shade400 : Colors.black,
-//                         ),
-//                       ),
-//                       const SizedBox(height: 10),
-//                       Divider(thickness: 1, color: darkTheme ? Colors.amber.shade400 : Colors.grey),
-//                       const SizedBox(height: 10),
-//                       Row(
-//                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                         children: [
-//                           Text(
-//                             widget.userRideRequestDetails!.userName!,
-//                             style: TextStyle(
-//                               fontSize: 20,
-//                               fontWeight: FontWeight.bold,
-//                               color: darkTheme ? Colors.amber.shade400 : Colors.black,
-//                             ),
-//                           ),
-//                           IconButton(
-//                             onPressed: () {},
-//                             icon: Icon(
-//                               Icons.phone,
-//                               color: darkTheme ? Colors.amber.shade400 : Colors.black,
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//
-//                       SizedBox(height: 10),
-//
-//                       Row(
-//                         children: [
-//                           Image.asset(
-//                             "assets/images/pickicon.png",
-//                             height: 30,
-//                             width: 30,
-//                           ),
-//                           const SizedBox(width: 10),
-//                           Expanded(
-//                             child: Text(
-//                               widget.userRideRequestDetails!.originAddress!,
-//                               style: TextStyle(
-//                                 fontSize: 18,
-//                                 fontWeight: FontWeight.bold,
-//                                 color: darkTheme ? Colors.amber.shade400 : Colors.black,
-//                               ),
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//                       const SizedBox(height: 10),
-//                       Row(
-//                         children: [
-//                           Image.asset(
-//                             "assets/images/desticon.png",
-//                             height: 30,
-//                             width: 30,
-//                           ),
-//                           const SizedBox(width: 10),
-//                           Expanded(
-//                             child: Text(
-//                               widget.userRideRequestDetails!.destinationAddress!,
-//                               style: TextStyle(
-//                                 fontSize: 18,
-//                                 fontWeight: FontWeight.bold,
-//                                 color: darkTheme ? Colors.amber.shade400 : Colors.black,
-//                               ),
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//                     ],
-//                   ),
-//
-//                       SizedBox(height: 10),
-//
-//                       Divider(
-//                         thickness: 1,
-//                         color: darkTheme ? Colors.amber.shade400 : Colors.grey,
-//                       ),
-//
-//                       SizedBox(height: 10),
-//
-//                       ElevatedButton.icon(
-//                         onPressed: () {
-//                           if(rideRequestStatus == "accepted") {
-//                             rideRequestStatus = "arrived";
-//
-//                             FirebaseDatabase.instance.ref().child("All Ride Requests").child(widget.userRideRequestDetails!.rideRequestId!).child("status").set(rideRequestStatus);
-//
-//                             setState(() {
-//                               buttonTitle = "Start Trip";
-//                               buttonColor = Colors.green;
-//                             });
-//
-//                             showDialog(
-//                               context: context,
-//                               builder: (BuildContext context) => ProgressDialog(
-//                               message: "Please wait...",
-//                             ),
-//                           );
-//
-//                             await drawPolyLineFromOriginToDestination(
-//                               widget.userRideRequestDetails!.originLatLng!,
-//                               widget.userRideRequestDetails!.destinationLatLng!,
-//                               darkTheme,
-//                             );
-//                             Navigator.pop(context);
-//                           }
-//                           else if(rideRequestStatus == "arrived") {
-//                             rideRequestStatus = "onTrip";
-//
-//                             FirebaseDatabase.instance.ref().child("All Ride Requests").child(widget.userRideRequestDetails!.rideRequestId!).child("status").set(rideRequestStatus);
-//
-//                             setState(() {
-//                               buttonTitle = "End Trip";
-//                               buttonColor = Colors.red;
-//                             });
-//                           }
-//
-//                           else if(rideRequestStatus == "onTrip") {
-//                             endTripNow();
-//
-//
-//
-//
-//
-//
-//                           icon: Icon(
-//                             Icons.directions_car,
-//                             color: darkTheme ? Colors.black : Colors.white,
-//                             size: 25,
-//                             ),
-//                             label: Text(
-//                               buttonTitle!,
-//                               style: TextStye(
-//                               color: darkTheme ? Colors.black : Colors.white,
-//                               fontSize: 14,
-//                               fontWeight: FontWeight.bold,
-//                               ),
-//                             ),
-//                           ),
-//
-//                           );
-//
-//
-//
-//
-//
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
