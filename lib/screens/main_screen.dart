@@ -20,6 +20,7 @@ import '../assistants/geofire_assistant.dart';
 import '../widgets/pay_fare_amount_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'screens/rate_driver_screen.dart';
 
 Future<void> _makePhoneCall(String phoneNumber) async {
   final Uri url = Uri(scheme: 'tel', path: phoneNumber);
@@ -561,12 +562,16 @@ class _MainScreenState extends State<MainScreen> {
         });
 
         if (rideMap["driver_location"] != null) {
-          double lat = double.parse(rideMap["driver_location"]["latitude"].toString());
-          double lng = double.parse(rideMap["driver_location"]["longitude"].toString());
+          double lat = double.parse(
+              rideMap["driver_location"]["latitude"].toString());
+          double lng = double.parse(
+              rideMap["driver_location"]["longitude"].toString());
           LatLng driverLatLng = LatLng(lat, lng);
 
-          if (userRideRequestStatus == "accepted") updateDriversLocationAtRealTime(driverLatLng);
-          if (userRideRequestStatus == "onTrip") updateReachingTimeToUserDropOffLocation(driverLatLng);
+          if (userRideRequestStatus ==
+              "accepted") updateDriversLocationAtRealTime(driverLatLng);
+          if (userRideRequestStatus ==
+              "onTrip") updateReachingTimeToUserDropOffLocation(driverLatLng);
           if (userRideRequestStatus == "arrived") {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
@@ -575,6 +580,7 @@ class _MainScreenState extends State<MainScreen> {
             });
           }
         }
+      }
 
         if (userRideRequestStatus == "ended" && rideMap["fareAmount"] != null) {
           double fare = double.parse(rideMap["fareAmount"].toString());
@@ -587,7 +593,17 @@ class _MainScreenState extends State<MainScreen> {
               builder: (_) => PayFareAmountDialog(fareAmount: fare),
             );
 
-            if (response == "cashPaid") {
+            if (response == "Cash Paid") {
+              if((eventSnap.snapshot.value as Map)["driverId"] != null) {
+                String assistedDriverId = (eventSnap.snapshot.value as Map)["driverId"].toString();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RateDriverScreen(
+                        assistedDriverId: assistedDriverId
+                    ),
+                  ),
+                );
               referenceRideRequest!.onDisconnect();
               tripRideRequestInfoStreamSubscription!.cancel();
             }
@@ -726,7 +742,23 @@ class _MainScreenState extends State<MainScreen> {
         );
       }
     }
+
+    initializeGeoFireListener();
+    AssistantMethods.readTripKeysForOnlineUser(context);
   }
+
+  initializeGeoFireListener() {
+    GeoFire.initialize("activeDrivers");
+
+    GeoFire.queryAtLocation(userCurrentPosition!.latitude, userCurrentPosition!.longitude, 10.0).listen((map) {
+      print(map);
+
+      if(event!=null) {
+        var callBack=map["callBack"];
+      }
+    }
+  }
+
 
   Future<void> getAddressFromLatLng() async {
     if (pickLocation == null || _isLoadingAddress) return;
@@ -1888,7 +1920,7 @@ class _MainScreenState extends State<MainScreen> {
                                         ),
                                      SizedBox(width: 5),
                                      Text(
-                                      "4.5",
+                                      driverRatings==null ? "0.00" : double.parse(driverRatings).toStringAsFixed(2),
                                       style: TextStyle(color: Colors.grey),
                                     ),
                                   ],

@@ -50,6 +50,7 @@ dependencies:
   flutter_geofire: ^2.0.6
   just_audio: ^0.9.36
   url_launcher: ^6.3.2
+  cloud_firestore: ^6.1.1
 
 
   # The following adds the Cupertino Icons font to your application.

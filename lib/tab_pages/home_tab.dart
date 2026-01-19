@@ -62,6 +62,9 @@ class _HomeTabState extends State<HomeTab> {
       position,
       context,
     );
+
+    AssistantMethods.readDriverRatings(context);
+
   }
 
   Future<void> makeDriverOnlineNow() async {
@@ -164,6 +167,8 @@ class _HomeTabState extends State<HomeTab> {
       ..car_model = data["car_details"]["car_model"]
       ..car_number = data["car_details"]["car_number"]
       ..car_type = data["car_details"]["car_type"];
+
+    AssistantMethods.readDriverEarnings(context);
   }
 
   @override

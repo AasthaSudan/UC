@@ -15,6 +15,10 @@ import 'screens/login_screen.dart';
 import 'screens/new_ride_screen.dart';
 import 'screens/new_ride_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'models/user_ride_request_info.dart';
+import 'package:latlong2/latlong.dart';
+import 'screens/rate_driver_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,34 +38,19 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,
-        home: const AuthCheck(),
+        home: RateDriverScreen(
+          // userRideRequestDetails: UserRideRequestInfo(
+          //   originLatLng: LatLng(28.6139, 77.2090),
+          //   destinationLatLng: LatLng(28.7041, 77.1025),
+          //   originAddress: 'New Delhi',
+          //   destinationAddress: 'Delhi',
+          //   rideRequestId: '1',
+          //   userName: 'John Doe',
+          //   userPhone: '1234567890',
+          // ),
+        ),
         debugShowCheckedModeBanner: false,
       ),
-    );
-  }
-}
-
-class AuthCheck extends StatelessWidget {
-  const AuthCheck({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        if (snapshot.hasData && snapshot.data != null) {
-          return const MainScreen();
-        }
-        return const LoginScreen();
-      },
     );
   }
 }

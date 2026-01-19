@@ -191,4 +191,73 @@ class AssistantMethods {
     streamSubscriptionPosition!.pause();
     // Geofire.removeLocation(firebaseAuth.currentUser!.uid);
   }
+
+  static void readTripKeysForOnlineDriver(context) {
+    FirebaseDatabase.instance.ref().child("All Ride Requests").orderByChild("driverId").equalTo(user).once().then((event) {
+      if(event.snapshot.value!=null) {
+        Map keys = event.snapshot.value as Map;
+        int overAllTripsCounter = keysTripsId.length;
+        Provider.of<AppInfo>(context, listen: false).updateOverAllTripsCounter(
+            overAllTripsCounter);
+
+        List<String> tripKeys = [];
+        keysTripId.forEach((key, value) {
+          tripKeys.add(key);
+        });
+        Provider.of<AppInfo>(context, listen: false).updateOverAllTripsKeys(
+            tripKeys);
+
+        readTripHistoryInfo(context);
+      }
+    });
+  }
+
+  static void readTripHistoryInfo(context) {
+    var tripAllKeys=Provider.of<AppInfo>(context,listen: false).historyTripKeys;
+    for(String key in tripAllKeys){
+      FirebaseDatabase.instance.ref()
+          .child("All Ride Requests")
+          .child(eachKey)
+          .once()
+          .then((event) {
+        var eachTripHistory = TripHistoryModel.fromSnapshot(event.snapshot);
+
+        if ((event.snapshot.value as Map)["status"] == "ended") {
+          Provider.of<AppInfo>(context, listen: false).updateTripHistoryInfo(
+              eachTripHistory);
+        }
+      });
+    }
+  }
+
+  static void readDriverEarnings(context) {
+    FirebaseDatabase.instance.ref()
+        .child("drivers")
+        .child(firebaseAuth.currentUser!.uid)
+        .child("earnings")
+        .once()
+        .then((event) {
+      if (event.snapshot.value != null) {
+        String driverEarnings = event.snapshot.value.toString();
+      }
+    });
+
+    readTripKeysForOnlineDriver(context);
+  }
+
+  static void readDriverRatings(context) {
+    FirebaseDatabase.instance.ref()
+        .child("drivers")
+        .child(firebaseAuth.currentUser!.uid)
+        .child("ratings")
+        .once()
+        .then((event) {
+      if (event.snapshot.value != null) {
+        String driverRatings = event.snapshot.value.toString();
+        Provider
+            .of<AppInfo>(context, listen: false)
+            .updateDriverAverageRatings(driverRatings);
+      }
+    });
+  }
 }
