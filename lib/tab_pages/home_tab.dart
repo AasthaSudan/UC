@@ -27,14 +27,23 @@ class _HomeTabState extends State<HomeTab> {
   bool isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+
+    checkIfLocationPermissionAllowed();
+    readCurrentDriverInfo();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PushNotificationSystem pushNotificationSystem = PushNotificationSystem();
+      pushNotificationSystem.initializeCloudMessaging(context);
+      pushNotificationSystem.generateAndGetToken();
+    });
+  }
+
+  @override
   void dispose() {
     streamSubscriptionPosition?.cancel();
     super.dispose();
-  }
-
-  Future<void> _initialize() async {
-    await checkIfLocationPermissionAllowed();
-    await readCurrentDriverInfo();
   }
 
   Future<void> checkIfLocationPermissionAllowed() async {
@@ -64,7 +73,6 @@ class _HomeTabState extends State<HomeTab> {
     );
 
     AssistantMethods.readDriverRatings(context);
-
   }
 
   Future<void> makeDriverOnlineNow() async {
@@ -87,8 +95,12 @@ class _HomeTabState extends State<HomeTab> {
         .ref()
         .child("drivers")
         .child(onlineDriverData.id!)
-        .child("status")
-        .set("online");
+        .update({
+      "status": "online",
+      "latitude": position.latitude,
+      "longitude": position.longitude,
+      "isAvailable": true,
+    });
 
     getLocationLiveUpdates();
 
@@ -113,6 +125,15 @@ class _HomeTabState extends State<HomeTab> {
             position.longitude,
           );
 
+          FirebaseDatabase.instance
+              .ref()
+              .child("drivers")
+              .child(onlineDriverData.id!)
+              .update({
+            "latitude": position.latitude,
+            "longitude": position.longitude,
+          });
+
           mapController.move(
             LatLng(position.latitude, position.longitude),
             15,
@@ -129,8 +150,10 @@ class _HomeTabState extends State<HomeTab> {
         .ref()
         .child("drivers")
         .child(onlineDriverData.id!)
-        .child("status")
-        .set("offline");
+        .update({
+      "status": "offline",
+      "isAvailable": false,
+    });
 
     streamSubscriptionPosition?.cancel();
 
@@ -172,21 +195,6 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   @override
-  void initState() {
-    super.initState();
-
-    checkIfLocationPermissionAllowed();
-    readCurrentDriverInfo();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      PushNotificationSystem pushNotificationSystem = PushNotificationSystem();
-      pushNotificationSystem.initializeCloudMessaging(context);
-      pushNotificationSystem.generateAndGetToken();
-    });
-  }
-
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
@@ -213,8 +221,7 @@ class _HomeTabState extends State<HomeTab> {
                       height: 80,
                       child: Icon(
                         Icons.local_taxi,
-                        color:
-                        isDriverActive ? Colors.green : Colors.red,
+                        color: isDriverActive ? Colors.green : Colors.red,
                         size: 40,
                       ),
                     ),
