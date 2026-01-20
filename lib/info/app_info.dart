@@ -1,13 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import '../models/directions.dart';
+import '../models/trip_history_model.dart';
 
 class AppInfo extends ChangeNotifier {
   Directions? userPickUpLocation, userDropOffLocation;
   int countTotalTrips = 0;
-  String driverTotalEarnings=0;
-  String driverAverageRatings=0;
-  List<StritoryTripKeysList=[];
-  List<TripsHistoryModel> allTripsHistoryInformationList=[];
+  String driverTotalEarnings = "0";
+  String driverAverageRatings = "0";
+  List<String> historyTripKeysList = [];
+  List<TripHistoryModel> allTripsHistoryInformationList = [];
 
   void updatePickUpLocationAddress(Directions userPickUpAddress) {
     userPickUpLocation = userPickUpAddress;
@@ -19,26 +20,28 @@ class AppInfo extends ChangeNotifier {
     notifyListeners();
   }
 
-  updateOverAllTripsCounter(int overAllTrpsCounter){
-    countTotalTrips=overAllTrpsCounter;
+  updateOverAllTripsCounter(int overAllTripsCounter) {
+    countTotalTrips = overAllTripsCounter;
     notifyListeners();
   }
 
-  updateOverAllTripsKeys(List<String> tripKeys){
-    keysTripsId=tripKeys;
+  updateOverAllTripsKeys(List<String> tripKeys) {
+    historyTripKeysList = tripKeys;
     notifyListeners();
-  )
+  }
 
-    updateTripHistoryInfo(TripHistoryModel tripHistoryModel){
-      allTripHistoryInfo.add(tripHistoryModel);
-      notifyListeners();
-    }
+  updateTripHistoryInfo(TripHistoryModel tripHistoryModel) {
+    allTripsHistoryInformationList.add(tripHistoryModel);
+    notifyListeners();
+  }
 
-    updateDriverTotalEarnings(String driverTotalEarnings){
-      driverTotalEarnings=driverEarnings;
-    }
+  updateDriverTotalEarnings(String driverEarnings) {
+    driverTotalEarnings = driverEarnings;
+    notifyListeners();
+  }
 
-    updateDriverAverageRatings(String driverAverageTrips){
-      driverAverageTrips=driverRatings;
-    }
+  updateDriverAverageRatings(String driverRatings) {
+    driverAverageRatings = driverRatings;
+    notifyListeners();
+  }
 }
