@@ -1,24 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/main_screen.dart';
-import 'theme/my_themes.dart';
-import 'screens/register_screen.dart';
 import 'screens/splash.dart';
-import 'screens/search_places_screen.dart';
+import 'theme/my_themes.dart';
 import 'info/app_info.dart';
 import 'firebase_options.dart';
-import 'screens/car_info_screen.dart';
-import 'package:project_1/tab_pages/home_tab.dart';
-import '../widgets/pay_fare_amount_dialog.dart';
-import 'screens/login_screen.dart';
-import 'screens/new_ride_screen.dart';
-import 'screens/new_ride_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'models/user_ride_request_info.dart';
-import 'package:latlong2/latlong.dart';
-import 'screens/rate_driver_screen.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,17 +24,7 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: MyThemes.lightTheme,
         darkTheme: MyThemes.darkTheme,
-        home: RateDriverScreen(
-          // userRideRequestDetails: UserRideRequestInfo(
-          //   originLatLng: LatLng(28.6139, 77.2090),
-          //   destinationLatLng: LatLng(28.7041, 77.1025),
-          //   originAddress: 'New Delhi',
-          //   destinationAddress: 'Delhi',
-          //   rideRequestId: '1',
-          //   userName: 'John Doe',
-          //   userPhone: '1234567890',
-          // ),
-        ),
+        home: SplashScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );
