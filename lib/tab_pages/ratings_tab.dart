@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:smooth_star_rating_nsafe/smooth_star_rating.dart';
+import 'package:provider/provider.dart';
+import '../info/app_info.dart';
+import '../global/global.dart';
 
 class RatingsTab extends StatefulWidget {
   const RatingsTab({super.key});
@@ -13,101 +17,91 @@ class _RatingsTabState extends State<RatingsTab> {
   @override
   void initState() {
     super.initState();
+    getRatingsNumber();
   }
 
   getRatingsNumber() {
     setState(() {
-      rating=double.parse(Provider.of<AppInfo>(context, listen:false).driverAverageRatings);
+      rating = double.parse(Provider.of<AppInfo>(context, listen: false).driverAverageRatings);
     });
 
     setupRatingsTitle();
   }
 
   setupRatingsTitle() {
-    if(rating>=0) {
+    if (rating == 1) {
       setState(() {
-        titleStarsRating="Very Bad";
+        titleStarsRating = "Very Bad";
       });
-    }
-    else if(rating>=1) {
+    } else if (rating == 2) {
       setState(() {
-        titleStarsRating="Bad";
+        titleStarsRating = "Bad";
       });
-    }
-    else if(rating>=2) {
+    } else if (rating == 3) {
       setState(() {
-        titleStarsRating="Good";
+        titleStarsRating = "Good";
       });
-    }
-    else if(rating>=3) {
+    } else if (rating == 4) {
       setState(() {
-        titleStarsRating="Very Good";
+        titleStarsRating = "Very Good";
       });
-    }
-    else if(rating>=4) {
+    } else if (rating == 5) {
       setState(() {
-        titleStarsRating="Excellent";
+        titleStarsRating = "Excellent";
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    bool darkTheme=MediaQuery.of(context).platformBrightness==Brightness.dark;
+    bool darkTheme = MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: darkTheme?Colors.black:Colors.white,
+      backgroundColor: darkTheme ? Colors.black : Colors.white,
       body: Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        backgroundColor: darkTheme?Colors.grey:Colors.white60,
+        backgroundColor: darkTheme ? Colors.grey : Colors.white60,
         child: Container(
           margin: const EdgeInsets.all(4),
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
-            color: darkTheme?Colors.black:Colors.white54,
+            color: darkTheme ? Colors.black : Colors.white54,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 22),
-
               Text(
                 "Your Ratings",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,
-                  color: darkTheme?Colors.amber.shade400:Colors.blue,
+                  color: darkTheme ? Colors.amber.shade400 : Colors.blue,
                 ),
               ),
-
               const SizedBox(height: 20),
-
               SmoothStarRating(
                 rating: rating,
                 allowHalfRating: true,
                 starCount: 5,
-                color: darkTheme?Colors.amber.shade400:Colors.blue,
-                borderColor: darkTheme?Colors.amber.shade400:Colors.blue,
+                color: darkTheme ? Colors.amber.shade400 : Colors.blue,
+                borderColor: darkTheme ? Colors.amber.shade400 : Colors.blue,
                 size: 46,
               ),
-
               SizedBox(height: 12),
-
               Text(
                 titleStarsRating,
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: darkTheme?Colors.amber.shade400:Colors.blue,
+                  color: darkTheme ? Colors.amber.shade400 : Colors.blue,
                 ),
               ),
-
               const SizedBox(height: 10),
-
             ],
           ),
         ),
