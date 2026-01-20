@@ -11,6 +11,7 @@ import '../info/directions_details_info.dart';
 import '../widgets/openroute_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../models/trip_history_model.dart';
 
 class AssistantMethods {
   static final OpenRouteService _routeService = OpenRouteService();
@@ -169,7 +170,7 @@ class AssistantMethods {
       'click_action': 'FLUTTER_NOTIFICATION_CLICK',
       'id': '1',
       'status': 'done',
-      'ride_request_id': rideRequestId
+      'rideRequestId': rideRequestId
     };
 
     Map official = {
@@ -188,24 +189,21 @@ class AssistantMethods {
   }
 
   static pauseLiveLocationUpdates() {
-    streamSubscriptionPosition!.pause();
-    // Geofire.removeLocation(firebaseAuth.currentUser!.uid);
+    streamSubscriptionPosition?.pause();
   }
 
   static void readTripKeysForOnlineDriver(context) {
-    FirebaseDatabase.instance.ref().child("All Ride Requests").orderByChild("driverId").equalTo(user).once().then((event) {
-      if(event.snapshot.value!=null) {
-        Map keys = event.snapshot.value as Map;
+    FirebaseDatabase.instance.ref().child("All Ride Requests").orderByChild("driverId").equalTo(firebaseAuth.currentUser!.uid).once().then((event) {
+      if(event.snapshot.value != null) {
+        Map keysTripsId = event.snapshot.value as Map;
         int overAllTripsCounter = keysTripsId.length;
-        Provider.of<AppInfo>(context, listen: false).updateOverAllTripsCounter(
-            overAllTripsCounter);
+        Provider.of<AppInfo>(context, listen: false).updateOverAllTripsCounter(overAllTripsCounter);
 
         List<String> tripKeys = [];
-        keysTripId.forEach((key, value) {
+        keysTripsId.forEach((key, value) {
           tripKeys.add(key);
         });
-        Provider.of<AppInfo>(context, listen: false).updateOverAllTripsKeys(
-            tripKeys);
+        Provider.of<AppInfo>(context, listen: false).updateOverAllTripsKeys(tripKeys);
 
         readTripHistoryInfo(context);
       }
@@ -213,8 +211,8 @@ class AssistantMethods {
   }
 
   static void readTripHistoryInfo(context) {
-    var tripAllKeys=Provider.of<AppInfo>(context,listen: false).historyTripKeys;
-    for(String key in tripAllKeys){
+    var tripAllKeys = Provider.of<AppInfo>(context, listen: false).historyTripKeysList;
+    for(String eachKey in tripAllKeys) {
       FirebaseDatabase.instance.ref()
           .child("All Ride Requests")
           .child(eachKey)
@@ -223,8 +221,7 @@ class AssistantMethods {
         var eachTripHistory = TripHistoryModel.fromSnapshot(event.snapshot);
 
         if ((event.snapshot.value as Map)["status"] == "ended") {
-          Provider.of<AppInfo>(context, listen: false).updateTripHistoryInfo(
-              eachTripHistory);
+          Provider.of<AppInfo>(context, listen: false).updateTripHistoryInfo(eachTripHistory);
         }
       });
     }
@@ -239,6 +236,7 @@ class AssistantMethods {
         .then((event) {
       if (event.snapshot.value != null) {
         String driverEarnings = event.snapshot.value.toString();
+        Provider.of<AppInfo>(context, listen: false).updateDriverTotalEarnings(driverEarnings);
       }
     });
 
@@ -254,9 +252,7 @@ class AssistantMethods {
         .then((event) {
       if (event.snapshot.value != null) {
         String driverRatings = event.snapshot.value.toString();
-        Provider
-            .of<AppInfo>(context, listen: false)
-            .updateDriverAverageRatings(driverRatings);
+        Provider.of<AppInfo>(context, listen: false).updateDriverAverageRatings(driverRatings);
       }
     });
   }
